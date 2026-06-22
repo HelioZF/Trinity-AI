@@ -15,11 +15,14 @@ This is not a collection of tutorials. Each pillar is built to demonstrate **dee
 ## 🏛️ The Three Pillars
 
 ### 1️⃣ SLM — Small Language Model from Scratch
-A compact, GPT-2-style language model implemented in **pure PyTorch**, trained on the scientific domain (generating paper abstracts from academic titles).
+A compact, GPT-2-style language model implemented in **pure PyTorch**, trained to generate draft **scientific abstracts from paper titles** in a single narrow field (arXiv ML).
+
+This pillar is **stacked**: the model is the technical spine, wrapped in an **educational, phase-by-phase curriculum** — a *learn-by-yourself* repo so any programmer can use it (with Claude Code) to learn how a modern AI is built end to end. See the [`ROADMAP.md`](./01-slm-from-scratch/ROADMAP.md).
 
 - Custom **Byte-Pair Encoding (BPE)** tokenizer, built from scratch
 - Transformer architecture: multi-head self-attention, positional embeddings, residual streams
 - Memory engineering for 12 GB VRAM: **gradient accumulation** + **mixed-precision (AMP)** training
+- 8 phases, each pairing **study (theory)** with **implementation**
 - 📂 [`01-slm-from-scratch/`](./01-slm-from-scratch/)
 
 ### 2️⃣ Applied Computer Vision
