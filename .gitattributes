@@ -1,0 +1,16 @@
+# Normalize all text files to LF inside the repository.
+# Git auto-detects text vs binary; checkouts still use the OS-native ending.
+* text=auto eol=lf
+
+# Explicitly mark common binary types so git never touches their bytes.
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.pt    binary
+*.pth   binary
+*.bin   binary
+*.safetensors binary
+*.onnx  binary
+*.parquet binary
+*.arrow binary

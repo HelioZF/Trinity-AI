@@ -1,0 +1,56 @@
+# ─── Python ───────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.ipynb_checkpoints/
+
+# ─── Virtual environments (one per pillar) ────────────
+venv/
+.venv/
+env/
+*/venv/
+*/.venv/
+
+# ─── Data: too large for git, often private ───────────
+# Keep small samples / schemas; ignore the heavy raw data.
+*/data/raw/
+*/data/processed/
+*.csv
+*.parquet
+*.jsonl
+*.arrow
+!**/sample/*.csv          # allow tiny committed samples
+
+# ─── Model weights & checkpoints (can be GBs) ─────────
+*/models/*
+!*/models/.gitkeep
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.bin
+*.onnx
+
+# ─── Tokenizer artifacts (regenerated from code) ──────
+*/tokenizer/*.json
+*.vocab
+*.merges
+
+# ─── Logs, experiment tracking, caches ────────────────
+runs/
+logs/
+wandb/
+.cache/
+*.log
+
+# ─── OS / Editor noise ────────────────────────────────
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# ─── Secrets (NEVER commit) ───────────────────────────
+.env
+*.key
+secrets/
