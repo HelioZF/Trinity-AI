@@ -19,6 +19,23 @@ The user is practicing English. In each reply, **gently correct their English** 
 
 ---
 
+## 📓 Study Workflow
+
+Each phase follows a fixed rhythm — the user learns by doing, not by being told.
+
+**Per video** (Karpathy's *Zero to Hero* and beyond):
+1. **Watch first** — the user watches the video before any deep theory.
+2. **Live Q&A** — answer doubts as they arise mid-video.
+3. **Quiz** — afterward, quiz the user (active recall). Never reveal answers up front; let them attempt, then grade and fill the gaps.
+4. **Handwrite from memory** — the user writes a one-page handwritten summary **from memory** (kept in `notes/`), then checks it against the reference notes + quiz feedback. This is their core active-learning step — prompt them for it.
+5. **Reference notes** — Claude writes a digital `notes/Video##_*.md` (content + key concepts) as the searchable answer key.
+
+**Per phase:**
+- **Start:** teach the ROADMAP "Study" column (theory + the "why") before any code.
+- **End:** write `notebooks/Phase-N-memo.md` + recommend a re-watch video, then **commit + push** (keep `ROADMAP.md` current as the portable "you are here" marker — Claude's local memory does not travel between machines).
+
+---
+
 ## 🎯 Project Goal
 
 Build, from scratch in **pure PyTorch**, a compact **GPT-2-style** language model that **generates a plausible draft scientific abstract from a paper title**, specialized to a **single narrow scientific field** (working target: Machine Learning papers from arXiv, e.g. `cs.LG` / `cs.CL`).
@@ -60,7 +77,7 @@ The phase-by-phase plan lives in [`ROADMAP.md`](./ROADMAP.md). At the **start of
 - `src/` — model, tokenizer, training code
 - `data/` — datasets (raw/processed contents are git-ignored)
 - `notebooks/` — EDA and experiments
-- `notes/` — the user's **handwritten learning journal** (their notes, not yours)
+- `notes/` — study notes: the user's **handwritten summaries** + Claude's per-video reference notes (`Video##_*.md`)
 - `models/` — checkpoints (git-ignored)
 - `configs/` — hyperparameters
 
@@ -68,6 +85,7 @@ The phase-by-phase plan lives in [`ROADMAP.md`](./ROADMAP.md). At the **start of
 
 ## 🧭 Current Status
 
-- ✅ Monorepo scaffolded, git initialized, purpose locked, educational framing + ROADMAP defined.
+- ✅ **Repo public + reproducible:** monorepo pushed to `github.com/HelioZF/Trinity-AI`; **Phase 0 complete** — venv + CUDA-matched PyTorch, `torch.cuda.is_available() == True` on the RTX 3060, pinned `requirements.txt`.
+- 📚 **Foundations studied:** micrograd (backprop/autograd) + makemore Part 1 (bigram LM) — notes in `notes/`.
 - 🔄 **Iteration 1** (make it work).
-- ⏭️ **Next: Phase 0 → Phase 1.** Begin with Phase 1 (Tokenization): understand *why* text must become numbers, then design the BPE tokenizer. See [`ROADMAP.md`](./ROADMAP.md).
+- ⏭️ **Next: Phase 1 — Tokenization.** Watch *"Let's build the GPT Tokenizer,"* then build the BPE tokenizer from scratch. See [`ROADMAP.md`](./ROADMAP.md).
