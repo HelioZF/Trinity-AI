@@ -60,7 +60,7 @@ Each phase has two parts:
 
 | Phase | Iter 1 (work) | Iter 2 (clean) |
 |-------|:---:|:---:|
-| 0 — Foundations & Setup | ⬜ | ⬜ |
+| 0 — Foundations & Setup | ✅ | ⬜ |
 | 1 — Tokenization | ⬜ | ⬜ |
 | 2 — Data Pipeline | ⬜ | ⬜ |
 | 3 — Transformer Architecture | ⬜ | ⬜ |
