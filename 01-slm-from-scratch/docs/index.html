@@ -257,6 +257,7 @@
       <a href="#p1-code" data-spy="p1-code" class="sub">The code</a>
       <a href="#p1-lab" data-spy="p1-lab" class="sub">Interactive lab</a>
       <a href="#p1-gotchas" data-spy="p1-gotchas" class="sub">Why LLMs act weird</a>
+      <a href="#p1-class" data-spy="p1-class" class="sub">The Tokenizer class</a>
     </nav>
 
     <nav class="nav-group" aria-label="Upcoming">
@@ -758,6 +759,65 @@
         punctuation boundaries) and <strong>special tokens</strong> like <code>&lt;|endoftext|&gt;</code>, inserted outside
         the merge process. Libraries: <strong>tiktoken</strong> (bytes-first, inference-only) vs
         <strong>SentencePiece</strong> (code-points-first, can train).</p>
+      </div>
+    </section>
+
+    <!-- THE CLASS -->
+    <section id="p1-class">
+      <div class="wrap">
+        <p class="eyebrow">Iteration 2 · make it clean</p>
+        <h3>The <code>Tokenizer</code> class</h3>
+        <p>The five functions work — but <code>merges</code> and <code>vocab</code> have to be handed to every call
+        (<code>encode(text, merges)</code>, <code>decode(ids, vocab)</code>). They're always born together and used
+        together: a textbook sign that the <strong>data and the behaviour that operates on it belong in one object</strong>.
+        Wrapping them in a class bundles that state — and unlocks <strong>saving a trained tokenizer to disk</strong>.</p>
+
+        <div class="callout">
+          <span class="tag">The API, before → after</span>
+          <p><strong>Before:</strong> <code>m, v = train(text, 500); ids = encode(text, m); s = decode(ids, v)</code><br>
+          <strong>After:</strong> <code>tok = Tokenizer(); tok.train(text, 500); ids = tok.encode(text); s = tok.decode(ids)</code><br>
+          The caller never juggles <code>merges</code>/<code>vocab</code> again — they live on <code>self</code>.</p>
+        </div>
+      </div>
+      <div class="wrap wide">
+<pre><code><span class="k">class</span> <span class="f">Tokenizer</span>:
+    <span class="k">def</span> <span class="f">__init__</span>(self):
+        self.merges = {}                                  <span class="c"># (pair) -> id   (for encode)</span>
+        self.vocab  = {i: <span class="f">bytes</span>([i]) <span class="k">for</span> i <span class="k">in</span> <span class="f">range</span>(<span class="s">256</span>)}  <span class="c"># id -> bytes (for decode)</span>
+
+    <span class="k">def</span> <span class="f">train</span>(self, text, vocab_size): ...   <span class="c"># stores self.merges / self.vocab</span>
+    <span class="k">def</span> <span class="f">encode</span>(self, text): ...              <span class="c"># uses self.merges</span>
+    <span class="k">def</span> <span class="f">decode</span>(self, ids): ...               <span class="c"># uses self.vocab</span>
+    <span class="k">def</span> <span class="f">save</span>(self, path): ...                <span class="c"># write the merges   -> .model</span>
+    <span class="k">def</span> <span class="f">load</span>(self, path): ...                <span class="c"># rebuild merges + vocab</span>
+    <span class="k">def</span> <span class="f">save_vocab</span>(self, path): ...          <span class="c"># human-readable dump -> .vocab</span></code></pre>
+      </div>
+      <div class="wrap">
+        <h4>Saving: store only what you can't rebuild</h4>
+        <p>The <code>.model</code> file stores <strong>only the merges</strong> — one pair per line, in order — because
+        <code>vocab</code> is fully <em>derivable</em> from them. Even the token id isn't written: the line's position
+        <em>is</em> the id (line 0 → 256). <strong>Never persist what you can reconstruct.</strong></p>
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th><code>.model</code> — exact · loadable</th><th><code>.vocab</code> — human · inspection-only</th></tr></thead>
+            <tbody>
+              <tr>
+                <td class="mono">104 101<br>108 108<br>32 116<br>…</td>
+                <td class="mono">[ to][k] -&gt; [ tok] 259<br>[ tok][e] -&gt; [ toke] 260<br>[ toke][ns] -&gt; [ tokens] 271<br>…</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout key">
+          <span class="tag">The two-file pattern</span>
+          <p>Real tokenizers write <strong>two</strong> files from the same state. The <code>.model</code> is minimal and
+          <strong>exact</strong> — it round-trips, so <code>load</code> reads it. The <code>.vocab</code> renders each
+          token to printable text (control bytes escaped, invalid UTF-8 → <code>�</code>) so a <em>human</em> can read
+          the merge lineage — but that rendering is <strong>lossy</strong>, so it can't be loaded back.
+          <strong>One file for the machine, one for the eyes.</strong></p>
+        </div>
+        <p class="hint">Verified: train → <code>save</code> → a fresh <code>Tokenizer().load(...)</code> reproduces identical
+        <code>merges</code>/<code>vocab</code> and encodes/decodes the same — the tokenizer survives a restart.</p>
       </div>
     </section>
 
