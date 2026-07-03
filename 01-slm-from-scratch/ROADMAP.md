@@ -61,7 +61,7 @@ Each phase has two parts:
 | Phase | Iter 1 (work) | Iter 2 (clean) |
 |-------|:---:|:---:|
 | 0 — Foundations & Setup | ✅ | ⬜ |
-| 1 — Tokenization | ✅ | ⬜ |
+| 1 — Tokenization | ✅ | 🔄 |
 | 2 — Data Pipeline | ⬜ | ⬜ |
 | 3 — Transformer Architecture | ⬜ | ⬜ |
 | 4 — Training Loop | ⬜ | ⬜ |
@@ -70,3 +70,5 @@ Each phase has two parts:
 | 7 — Inference & Showcase | ⬜ | ⬜ |
 
 ⬜ not started · 🔄 in progress · ✅ done
+
+> **📍 You are here:** Phase 1 complete — byte-level BPE tokenizer built, reviewed, and refactored into a `Tokenizer` class (`src/tokenizer.py`), plus an interactive study Codex (`docs/index.html`). **Next: Phase 2 — Data Pipeline** (start with the *Study* column, then arXiv title↔abstract pairs → tokenize → `Dataset`/`DataLoader`).

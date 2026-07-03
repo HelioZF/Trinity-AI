@@ -85,7 +85,10 @@ The phase-by-phase plan lives in [`ROADMAP.md`](./ROADMAP.md). At the **start of
 
 ## 🧭 Current Status
 
-- ✅ **Repo public + reproducible:** monorepo pushed to `github.com/HelioZF/Trinity-AI`; **Phase 0 complete** — venv + CUDA-matched PyTorch, `torch.cuda.is_available() == True` on the RTX 3060, pinned `requirements.txt`.
-- 📚 **Foundations studied:** micrograd (backprop/autograd) + makemore Part 1 (bigram LM) — notes in `notes/`.
-- 🔄 **Iteration 1** (make it work).
-- ⏭️ **Next: Phase 1 — Tokenization.** Watch *"Let's build the GPT Tokenizer,"* then build the BPE tokenizer from scratch. See [`ROADMAP.md`](./ROADMAP.md).
+- ✅ **Repo public + reproducible:** monorepo pushed to `github.com/HelioZF/Trinity-AI`; **Phase 0 complete** — venv + CUDA-matched PyTorch, `torch.cuda.is_available() == True` on the RTX 3060 (desktop), pinned `requirements.txt`.
+- 📚 **Foundations studied:** micrograd (backprop/autograd), makemore Part 1 (bigram LM), and *"Let's build the GPT Tokenizer"* — notes in `notes/`.
+- ✅ **Phase 1 — Tokenization complete.** Byte-level BPE tokenizer built from scratch and refactored into a `Tokenizer` class in `src/tokenizer.py` (`train`/`encode`/`decode` + `save`/`load`/`save_vocab`); `decode(encode(x)) == x` verified, and save→load survives a restart. Deeply reviewed (function-by-function, Big O, edge cases).
+- 📖 **The Codex:** `docs/index.html` — a self-contained interactive study encyclopedia (BPE lab, per-function playgrounds, pipeline figure, the class section). Add a new entry each phase.
+- 🔄 **Iteration 1** (make it work), with early Iteration-2 cleanup already done on the tokenizer (the class + docs).
+- ⏭️ **Next: Phase 2 — Data Pipeline.** Teach the "Study" column first (datasets vs. dataloaders, train/val split, batching & why we shuffle), then fetch + clean arXiv title↔abstract pairs (narrow field, e.g. `cs.LG`), tokenize with the `Tokenizer`, and build a `Dataset`/`DataLoader`. See [`ROADMAP.md`](./ROADMAP.md).
+- 💻 **Env note:** the **desktop** has working CUDA PyTorch (from Phase 0) — so Phase 2's `DataLoader` runs there fine. The laptop's Python 3.14 can't install the `cu132` pin (CPU/stdlib work only); the real cross-machine env fix is deferred to Phase 4+. Always open files with `encoding="utf-8"` (Windows cp1252 default bites otherwise).
