@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trinity-AI · SLM Codex</title>
+<style>
+  :root{
+    --paper:#EDF0F4;
+    --card:#FFFFFF;
+    --ink:#131820;
+    --muted:#586172;
+    --faint:#8A94A3;
+    --line:#D3DAE3;
+    --accent:#2438C4;
+    --accent-hover:#1B2CA0;
+    --accent-tint:#E5E8FA;
+    --amber:#B0730A;
+    --amber-tint:#F6EDD8;
+    --code-bg:#F4F6FA;
+    --good:#1F7A4D;
+    --sans:"Segoe UI", system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif;
+    --mono:"Cascadia Code","Cascadia Mono","JetBrains Mono","SF Mono",Consolas,"Liberation Mono",monospace;
+    --maxread:72ch;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  html{color-scheme:light;}
+  @media (prefers-reduced-motion: no-preference){ html{scroll-behavior:smooth;} }
+  body{
+    margin:0; background:var(--paper); color:var(--ink);
+    font-family:var(--sans); font-size:17px; line-height:1.65;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--accent); text-decoration:none;}
+  a:hover{color:var(--accent-hover); text-decoration:underline;}
+  :focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:4px;}
+
+  /* ---------- Layout ---------- */
+  .layout{ display:grid; grid-template-columns:270px minmax(0,1fr); align-items:start; }
+  .sidebar{
+    position:sticky; top:0; height:100vh; overflow-y:auto;
+    background:#0F1420; color:#C9D2E0; padding:26px 20px 40px;
+    border-right:1px solid #1E2637;
+  }
+  main{ padding:0 clamp(20px,5vw,72px) 96px; min-width:0; }
+
+  /* ---------- Sidebar ---------- */
+  .brand{ display:flex; align-items:baseline; gap:8px; margin-bottom:4px; }
+  .brand .mark{ font-family:var(--mono); font-weight:700; font-size:18px; letter-spacing:-0.5px; color:#fff; }
+  .brand .mark .dot{ color:#6E86FF; }
+  .brand-sub{ font-family:var(--mono); font-size:11px; letter-spacing:1.5px; text-transform:uppercase; color:#6B7688; margin-bottom:26px; }
+  .nav-group{ margin-bottom:22px; }
+  .nav-group > .nav-label{
+    font-family:var(--mono); font-size:10.5px; letter-spacing:1.6px; text-transform:uppercase;
+    color:#6B7688; display:block; margin:0 0 8px 6px;
+  }
+  .nav-group a{
+    display:block; color:#AEB9CC; padding:5px 10px; border-radius:7px; font-size:14px; line-height:1.4;
+  }
+  .nav-group a:hover{ background:#18202F; color:#fff; text-decoration:none; }
+  .nav-group a.sub{ padding-left:22px; font-size:13px; color:#8B96A8; }
+  .nav-group a.active{ background:var(--accent); color:#fff; }
+  .nav-group a.done::after{ content:"✓"; float:right; color:#4FA97B; font-family:var(--mono); }
+  .nav-group a.soon::after{ content:"·soon"; float:right; color:#5A6478; font-family:var(--mono); font-size:11px; }
+
+  /* ---------- Reading rhythm ---------- */
+  .wrap{ max-width:var(--maxread); }
+  .wrap.wide{ max-width:920px; }
+  h1,h2,h3{ text-wrap:balance; line-height:1.2; }
+  h2{ font-size:30px; letter-spacing:-0.6px; margin:0 0 6px; }
+  h3{ font-size:21px; letter-spacing:-0.3px; margin:34px 0 8px; }
+  h4{ font-size:15px; margin:22px 0 6px; font-family:var(--mono); letter-spacing:.3px; }
+  p{ margin:0 0 16px; }
+  .eyebrow{ font-family:var(--mono); font-size:12px; letter-spacing:2px; text-transform:uppercase; color:var(--accent); margin:0 0 10px; }
+  section{ padding-top:56px; }
+  section.phase{ border-top:1px solid var(--line); margin-top:34px; }
+  strong{ font-weight:650; }
+  .lead{ font-size:19px; color:#2A3340; }
+
+  /* ---------- Hero ---------- */
+  .hero{ padding:64px 0 8px; }
+  .hero h1{ font-size:clamp(34px,5vw,52px); letter-spacing:-1.4px; margin:0 0 14px; }
+  .hero .lead{ max-width:60ch; }
+  .pipe{
+    display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin:30px 0 8px;
+    font-family:var(--mono); font-size:14px;
+  }
+  .pipe .stage{ background:var(--card); border:1px solid var(--line); border-radius:8px; padding:8px 12px; }
+  .pipe .arrow{ color:var(--faint); }
+  .pipe .bytes span{ color:var(--muted); }
+  .pipe .tok{ background:var(--accent-tint); color:var(--accent); border-color:transparent; font-weight:600; }
+
+  /* ---------- Callouts ---------- */
+  .callout{ border:1px solid var(--line); border-left:3px solid var(--accent); background:var(--card);
+    border-radius:8px; padding:16px 18px; margin:20px 0; }
+  .callout.key{ border-left-color:var(--amber); background:var(--amber-tint); }
+  .callout .tag{ font-family:var(--mono); font-size:11px; letter-spacing:1.4px; text-transform:uppercase; color:var(--accent); display:block; margin-bottom:6px; }
+  .callout.key .tag{ color:var(--amber); }
+  .callout p:last-child{ margin-bottom:0; }
+
+  /* ---------- Code ---------- */
+  pre{ background:#0F1420; color:#DCE3F0; border-radius:var(--radius); padding:18px 20px; overflow-x:auto;
+    font-family:var(--mono); font-size:13.5px; line-height:1.6; margin:18px 0; }
+  pre .c{ color:#7E8AA3; font-style:italic; }
+  pre .k{ color:#8AB4FF; }
+  pre .s{ color:#8FD6A6; }
+  pre .f{ color:#E6C078; }
+  code{ font-family:var(--mono); font-size:.9em; background:var(--code-bg); border:1px solid var(--line);
+    border-radius:5px; padding:1px 5px; }
+  pre code{ background:none; border:none; padding:0; font-size:inherit; }
+
+  /* ---------- Tables ---------- */
+  .tablewrap{ overflow-x:auto; margin:18px 0; }
+  table{ border-collapse:collapse; width:100%; font-size:15px; background:var(--card); border-radius:8px; overflow:hidden; }
+  th,td{ text-align:left; padding:10px 14px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th{ font-family:var(--mono); font-size:11.5px; letter-spacing:1px; text-transform:uppercase; color:var(--muted); background:#F5F7FB; }
+  tr:last-child td{ border-bottom:none; }
+  td.mono,.num{ font-family:var(--mono); font-variant-numeric:tabular-nums; }
+
+  /* ---------- Interactive Lab ---------- */
+  .lab{ background:var(--card); border:1px solid var(--line); border-radius:14px; padding:22px; margin:24px 0; }
+  .lab-head{ display:flex; align-items:center; gap:10px; margin-bottom:4px; }
+  .lab-head .badge{ font-family:var(--mono); font-size:10.5px; letter-spacing:1.5px; text-transform:uppercase;
+    background:var(--accent); color:#fff; padding:3px 8px; border-radius:5px; }
+  .lab textarea{ width:100%; min-height:96px; resize:vertical; font-family:var(--mono); font-size:13.5px;
+    line-height:1.55; padding:12px 14px; border:1px solid var(--line); border-radius:9px; background:#FBFCFE; color:var(--ink); }
+  .lab-controls{ display:flex; flex-wrap:wrap; align-items:center; gap:16px 22px; margin:16px 0; }
+  .lab-controls label{ font-size:14px; color:var(--muted); display:flex; align-items:center; gap:10px; }
+  .lab-controls input[type=range]{ accent-color:var(--accent); }
+  .lab-controls output{ font-family:var(--mono); font-weight:700; color:var(--accent); min-width:2.5ch; }
+  button.run{ font-family:var(--sans); font-weight:600; font-size:15px; color:#fff; background:var(--accent);
+    border:none; border-radius:9px; padding:10px 20px; cursor:pointer; }
+  button.run:hover{ background:var(--accent-hover); }
+  .stats{ display:flex; flex-wrap:wrap; gap:10px; margin:6px 0 16px; }
+  .stat{ background:var(--code-bg); border:1px solid var(--line); border-radius:8px; padding:8px 14px; min-width:96px; }
+  .stat .v{ font-family:var(--mono); font-size:20px; font-weight:700; font-variant-numeric:tabular-nums; display:block; }
+  .stat .l{ font-size:11.5px; letter-spacing:.4px; text-transform:uppercase; color:var(--muted); }
+  .stat.ok .v{ color:var(--good); }
+  .ttokens{ white-space:pre-wrap; overflow-wrap:anywhere; font-family:var(--mono); font-size:14.5px; line-height:2.15;
+    background:#FBFCFE; border:1px solid var(--line); border-radius:9px; padding:12px 14px; margin:8px 0 4px; }
+  .ttokens .t{ border-radius:2px; padding:3px 0; -webkit-box-decoration-break:clone; box-decoration-break:clone; }
+  .ids{ font-family:var(--mono); font-size:13px; color:var(--muted); background:var(--code-bg); border:1px solid var(--line);
+    border-radius:8px; padding:10px 12px; overflow-x:auto; white-space:pre-wrap; word-break:break-all; margin:8px 0 4px;
+    font-variant-numeric:tabular-nums; }
+  .hint{ font-size:13px; color:var(--faint); }
+
+  /* ---------- Cards (upcoming phases) ---------- */
+  .cards{ display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:14px; margin:20px 0; }
+  .pcard{ background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px 18px; }
+  .pcard .n{ font-family:var(--mono); font-size:12px; color:var(--faint); }
+  .pcard h4{ margin:4px 0 6px; font-family:var(--sans); font-size:16.5px; letter-spacing:0; }
+  .pcard p{ font-size:14px; color:var(--muted); margin:0; }
+
+  /* ---------- Figure / flow diagram ---------- */
+  .fig{ border:1px solid var(--line); border-radius:14px; overflow:hidden; background:var(--card);
+    box-shadow:0 1px 3px rgba(16,24,40,.05), 0 10px 30px rgba(16,24,40,.06); margin:24px 0; }
+  .fig-head{ display:flex; align-items:center; gap:11px; padding:12px 18px; background:#0F1420; color:#E7ECF6; font-size:14px; }
+  .fig-head .fig-tag{ font-family:var(--mono); font-size:10.5px; letter-spacing:1.4px; text-transform:uppercase;
+    background:var(--accent); color:#fff; padding:3px 8px; border-radius:5px; }
+  .fig-body{ padding:16px; display:flex; flex-direction:column; gap:0; }
+  .zone{ position:relative; border-radius:10px; padding:27px 16px 16px; }
+  .zone-lbl{ position:absolute; top:9px; left:15px; font-family:var(--mono); font-size:10px; letter-spacing:1.4px;
+    text-transform:uppercase; color:var(--faint); }
+  .int-zone{ background:var(--accent-tint); }
+  .int-zone .zone-lbl{ color:var(--accent); }
+  .membrane{ display:flex; align-items:center; justify-content:center; gap:12px; margin:9px 0;
+    background:var(--accent); color:#fff; border-radius:8px; padding:9px 14px; }
+  .membrane .mem-side{ font-family:var(--mono); font-size:10px; letter-spacing:1.6px; text-transform:uppercase; color:rgba(255,255,255,.62); }
+  .membrane .mem-op{ font-family:var(--mono); font-size:13.5px; font-weight:600; }
+  .drow{ display:flex; flex-wrap:wrap; align-items:stretch; gap:10px; }
+  .dnode{ flex:1 1 150px; background:#fff; border:1px solid var(--line); border-radius:9px; padding:11px 13px;
+    box-shadow:0 1px 2px rgba(16,24,40,.06); }
+  .dnode-k{ display:block; font-family:var(--mono); font-size:10px; letter-spacing:1px; text-transform:uppercase; color:var(--muted); margin-bottom:4px; }
+  .dnode-v{ display:block; font-family:var(--mono); font-size:13.5px; }
+  .dnode.ids .dnode-v{ color:var(--accent); }
+  .dnode.core{ border:1.5px dashed var(--accent); flex:2 1 220px; }
+  .conn{ align-self:center; color:var(--accent); font-size:16px; font-weight:700; }
+  .fig-cap{ font-size:13.5px; color:var(--muted); padding:2px 18px 16px; margin:0; }
+  @media (max-width:640px){
+    .drow{ flex-direction:column; }
+    .conn{ transform:rotate(90deg); align-self:flex-start; margin-left:20px; }
+    .dnode.core{ flex-basis:auto; }
+  }
+
+  /* ---------- Glossary ---------- */
+  dl.gloss{ margin:16px 0; }
+  dl.gloss dt{ font-family:var(--mono); font-weight:700; color:var(--accent); margin-top:16px; }
+  dl.gloss dd{ margin:4px 0 0; color:#2A3340; }
+
+  footer{ border-top:1px solid var(--line); margin-top:60px; padding-top:24px; color:var(--faint); font-size:13.5px; }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width:900px){
+    .layout{ grid-template-columns:1fr; }
+    .sidebar{ position:sticky; top:0; height:auto; border-right:none; border-bottom:1px solid #1E2637;
+      display:flex; gap:14px; overflow-x:auto; padding:14px 16px; align-items:center; }
+    .brand,.brand-sub{ margin:0; white-space:nowrap; }
+    .brand-sub{ display:none; }
+    .nav-group{ margin:0; display:flex; gap:4px; }
+    .nav-group > .nav-label{ display:none; }
+    .nav-group a{ white-space:nowrap; padding:5px 9px; }
+    .nav-group a.sub{ display:none; }
+    .nav-group a.done::after,.nav-group a.soon::after{ content:""; }
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- ================= SIDEBAR ================= -->
+  <aside class="sidebar">
+    <div class="brand"><span class="mark">Trinity-AI<span class="dot">·</span>Codex</span></div>
+    <div class="brand-sub">Pillar I — SLM from scratch</div>
+
+    <nav class="nav-group" aria-label="Start here">
+      <span class="nav-label">Start here</span>
+      <a href="#overview" data-spy="overview">The project</a>
+      <a href="#howto" data-spy="howto">How this codex works</a>
+    </nav>
+
+    <nav class="nav-group" aria-label="Foundations">
+      <span class="nav-label">Foundations</span>
+      <a href="#phase-0" data-spy="phase-0" class="done">Phase 0 · Setup</a>
+    </nav>
+
+    <nav class="nav-group" aria-label="Phase 1">
+      <span class="nav-label">Phase 1 · Tokenization</span>
+      <a href="#phase-1" data-spy="phase-1" class="done">Overview</a>
+      <a href="#p1-place" data-spy="p1-place" class="sub">Where it lives</a>
+      <a href="#p1-why" data-spy="p1-why" class="sub">Why tokenize?</a>
+      <a href="#p1-unicode" data-spy="p1-unicode" class="sub">Unicode &amp; UTF-8</a>
+      <a href="#p1-granularity" data-spy="p1-granularity" class="sub">The tradeoff</a>
+      <a href="#p1-bpe" data-spy="p1-bpe" class="sub">BPE training</a>
+      <a href="#p1-codec" data-spy="p1-codec" class="sub">encode / decode</a>
+      <a href="#p1-code" data-spy="p1-code" class="sub">The code</a>
+      <a href="#p1-lab" data-spy="p1-lab" class="sub">Interactive lab</a>
+      <a href="#p1-gotchas" data-spy="p1-gotchas" class="sub">Why LLMs act weird</a>
+    </nav>
+
+    <nav class="nav-group" aria-label="Upcoming">
+      <span class="nav-label">Upcoming</span>
+      <a href="#roadmap" data-spy="roadmap" class="soon">Phases 2–7</a>
+    </nav>
+
+    <nav class="nav-group" aria-label="Reference">
+      <span class="nav-label">Reference</span>
+      <a href="#glossary" data-spy="glossary">Glossary</a>
+    </nav>
+  </aside>
+
+  <!-- ================= MAIN ================= -->
+  <main>
+
+    <!-- HERO -->
+    <header class="hero" id="top">
+      <div class="wrap">
+        <p class="eyebrow">A build-it-yourself field guide</p>
+        <h1>How a small language model is built, one part at a time.</h1>
+        <p class="lead">This codex is the growing reference for <strong>Trinity-AI, Pillar I</strong> — a GPT-2-style
+        model, written from scratch in pure PyTorch, that turns a paper title into a plausible scientific abstract.
+        Each phase is added here <em>after</em> it's understood and built — concepts, the “why”, the code, and live demos.</p>
+
+        <div class="pipe" aria-hidden="true">
+          <span class="stage bytes">“Hi” <span>→ 72 105</span></span>
+          <span class="arrow">→</span>
+          <span class="stage">bytes</span>
+          <span class="arrow">→ merge →</span>
+          <span class="stage tok">tokens</span>
+          <span class="arrow">→</span>
+          <span class="stage">the model</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- OVERVIEW -->
+    <section id="overview">
+      <div class="wrap">
+        <p class="eyebrow">Orientation</p>
+        <h2>The project</h2>
+        <p>The goal is a compact language model that performs <strong>conditional text generation</strong>:
+        given a paper <em>title</em>, it drafts an <em>abstract</em>. That's expansion, not summarization —
+        a deliberate choice.</p>
+        <p>Why title → abstract, and not full-paper summarization? Because self-attention cost grows
+        <strong>quadratically with sequence length</strong>. Summarizing whole papers needs a huge context window,
+        which is infeasible on a single <strong>12&nbsp;GB RTX&nbsp;3060</strong>. Title → abstract keeps the context
+        small and trainable locally — private, free, and entirely on-device.</p>
+        <div class="callout">
+          <span class="tag">Design constraint</span>
+          <p>The 12&nbsp;GB GPU is treated as a <strong>design parameter</strong>, not an afterthought. Model size,
+          vocabulary, batch size, and sequence length are all chosen to fit it — using gradient accumulation and
+          mixed-precision (AMP) training later on.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- HOW TO -->
+    <section id="howto">
+      <div class="wrap">
+        <p class="eyebrow">Method</p>
+        <h2>How this codex works</h2>
+        <p>Two passes over the whole project. <strong>Iteration 1 — make it work:</strong> learn each phase and get the
+        model training and generating. <strong>Iteration 2 — make it clean:</strong> refine the code and the writing so
+        any programmer can learn from it. This page is the artifact of that second promise, filled in as we go.</p>
+        <p>Every phase entry aims to answer four questions, in order: <strong>why</strong> the part exists,
+        <strong>what</strong> the theory is, <strong>how</strong> it's built, and <strong>does it work</strong>.</p>
+      </div>
+    </section>
+
+    <!-- PHASE 0 -->
+    <section id="phase-0" class="phase">
+      <div class="wrap">
+        <p class="eyebrow">Phase 0 · complete</p>
+        <h2>Foundations &amp; setup</h2>
+        <p>Before any modeling: a reproducible environment. A Python virtual environment, PyTorch installed with a
+        CUDA build matched to the GPU, and a check that the GPU is actually visible.</p>
+        <div class="callout">
+          <span class="tag">Done when</span>
+          <p><code>torch.cuda.is_available()</code> returns <code>True</code> and the environment is pinned in
+          <code>requirements.txt</code> so it rebuilds identically.</p>
+        </div>
+        <p class="hint">Portability note: a CUDA-pinned <code>requirements.txt</code> is machine-specific. On a
+        different GPU (or none), the pinned build won't resolve — that's expected, and revisited in Phase 5.</p>
+      </div>
+    </section>
+
+    <!-- ============ PHASE 1 ============ -->
+    <section id="phase-1" class="phase">
+      <div class="wrap">
+        <p class="eyebrow">Phase 1 · complete</p>
+        <h2>Tokenization</h2>
+        <p class="lead">Turning text into numbers — and back — with a Byte-Pair Encoding (BPE) tokenizer built from
+        scratch.</p>
+        <p>A neural network is a math machine: it only operates on numbers. A tokenizer is the
+        <strong>bidirectional translator</strong> between text and integers. It <strong>encodes</strong> text into a
+        sequence of integer token IDs (via a vocabulary) so the model can process it, and <strong>decodes</strong> the
+        model's output IDs back into readable text.</p>
+        <div class="callout">
+          <span class="tag">Done when</span>
+          <p>The round-trip holds — <code>decode(encode(x)) == x</code> for arbitrary text — and the vocabulary is a
+          sensible size that actually compresses the input.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="p1-place">
+      <div class="wrap wide">
+        <h3>Where the tokenizer lives</h3>
+        <p>The tokenizer is the <strong>gate at both ends of the model</strong>. Text enters through
+        <code>encode</code> and leaves through <code>decode</code>; everything in between is pure integers. The model
+        core never sees a single character.</p>
+
+        <figure class="fig" aria-label="Diagram: the tokenizer is the membrane between the text world and the integer world. encode carries input text down into token ids; the model core operates only on integers and produces the next id; decode carries it back up to text.">
+          <figcaption class="fig-head"><span class="fig-tag">Figure&nbsp;1</span> The tokenizer's place in the pipeline</figcaption>
+          <div class="fig-body">
+            <div class="zone text-zone">
+              <span class="zone-lbl">Text world</span>
+              <div class="dnode"><span class="dnode-k">input · you type</span><span class="dnode-v">"Attention is all you…"</span></div>
+            </div>
+
+            <div class="membrane"><span class="mem-side">Tokenizer</span><span class="mem-op">↓&nbsp; encode · text → ids</span></div>
+
+            <div class="zone int-zone">
+              <span class="zone-lbl">Integer world · the model only sees numbers</span>
+              <div class="drow">
+                <div class="dnode ids"><span class="dnode-k">token ids</span><span class="dnode-v">[1234, 318, 477, …]</span></div>
+                <span class="conn">→</span>
+                <div class="dnode core"><span class="dnode-k">model core</span><span class="dnode-v">embed → attention → logits → sample</span></div>
+                <span class="conn">→</span>
+                <div class="dnode ids"><span class="dnode-k">next id</span><span class="dnode-v">477</span></div>
+              </div>
+            </div>
+
+            <div class="membrane"><span class="mem-side">Tokenizer</span><span class="mem-op">↑&nbsp; decode · ids → text</span></div>
+
+            <div class="zone text-zone">
+              <span class="zone-lbl">Text world</span>
+              <div class="dnode"><span class="dnode-k">output · you read</span><span class="dnode-v">"need"</span></div>
+            </div>
+          </div>
+          <p class="fig-cap">The tokenizer is the <strong>membrane</strong> between two worlds: <code>encode</code> carries
+          text <em>down</em> into integers, <code>decode</code> carries integers <em>back up</em> to text. Everything the
+          model does happens in the integer world.</p>
+        </figure>
+
+        <div class="callout key">
+          <span class="tag">The big idea</span>
+          <p>The model core <strong>never sees text</strong> — it only ever sees <strong>integer token IDs</strong>.
+          The tokenizer is the translator standing at both doors.</p>
+        </div>
+
+        <h4>The tokenizer's responsibilities</h4>
+        <ul>
+          <li><strong>Train</strong> — learn the merges from a corpus, building the vocabulary (once, offline).</li>
+          <li><strong>encode</strong> — text → token IDs (the entry gate).</li>
+          <li><strong>decode</strong> — token IDs → text (the exit gate).</li>
+          <li><strong>Define the vocabulary size</strong> — which sets the model's <em>embedding table</em> and
+          <em>output layer</em> dimensions (both grow linearly with vocab — the Phase-1 tradeoff).</li>
+        </ul>
+        <p class="hint"><strong>Not</strong> its job: embeddings, attention, or learning meaning — those belong to the
+        model. After training, the tokenizer is a fixed, deterministic translator.</p>
+      </div>
+    </section>
+
+    <section id="p1-why">
+      <div class="wrap">
+        <h3>Why turn text into numbers?</h3>
+        <p>Symbols mean nothing to a matrix multiply. Every character, word, or sub-word must become an integer the
+        model can look up and learn a vector for. The simplest version — <em>character-level</em> — was used in the
+        makemore exercise (<code>a→1, b→2…</code>). A production tokenizer does the same job on smarter units:
+        <strong>subwords</strong>.</p>
+      </div>
+    </section>
+
+    <section id="p1-unicode">
+      <div class="wrap">
+        <h3>Unicode, code points, and UTF-8</h3>
+        <p>A <strong>code point</strong> is the integer Unicode assigns to a character: <code>ord('A') = 65</code>,
+        <code>ord('😀') = 128512</code>. There are ~150,000 of them.</p>
+        <p>A <strong>byte</strong> holds one of 256 values, <strong>0–255</strong> (2⁸ = 256 values; counting from 0,
+        the max is 255). A code point like 128512 is far too big for one byte — so code points are <em>encoded</em>
+        into bytes by <strong>UTF-8</strong>, which uses <strong>1 to 4 bytes</strong> per character depending on the
+        code point's magnitude:</p>
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th>Character</th><th>Code point</th><th>UTF-8 bytes</th></tr></thead>
+            <tbody>
+              <tr><td>A</td><td class="num">65</td><td class="mono">[65]</td></tr>
+              <tr><td>é</td><td class="num">233</td><td class="mono">[195, 169]</td></tr>
+              <tr><td>😀</td><td class="num">128512</td><td class="mono">[240, 159, 152, 128]</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>UTF-8 is chosen over UTF-16/32 for three reasons: it's <strong>compact</strong> (ASCII stays 1 byte, where
+        the others pad with zero bytes), <strong>ASCII-compatible</strong> (old text is already valid UTF-8), and it
+        yields a clean <strong>byte stream (0–255)</strong> — a fixed base alphabet of exactly 256 tokens with
+        <strong>no out-of-vocabulary</strong> ever. All three encodings cover all of Unicode; the win is efficiency.</p>
+      </div>
+    </section>
+
+    <section id="p1-granularity">
+      <div class="wrap">
+        <h3>The granularity tradeoff</h3>
+        <p>Vocabulary size and sequence length pull in <strong>opposite directions</strong>. Finer units mean a tiny
+        vocabulary but long sequences; coarser units mean a huge vocabulary but short sequences.</p>
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th>Granularity</th><th>Vocab size</th><th>Sequence length</th><th>Problem</th></tr></thead>
+            <tbody>
+              <tr><td>Raw bytes</td><td>smallest (fixed 256)</td><td>longest</td><td>sequences far too long</td></tr>
+              <tr><td>Characters</td><td>small</td><td>long</td><td>little meaning per token</td></tr>
+              <tr><td>Words</td><td>largest (100k+)</td><td>shortest</td><td>out-of-vocabulary on unseen words</td></tr>
+              <tr><td><strong>Subwords (BPE)</strong></td><td><strong>moderate</strong></td><td><strong>moderate</strong></td><td><strong>the Goldilocks middle</strong></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Subwords keep common words as single tokens and split rare words into pieces — word-like efficiency with
+        <strong>no OOV</strong>. Two costs scale here, and they matter for a small model on 12&nbsp;GB: the embedding +
+        output layers grow <strong>linearly with vocabulary</strong>, while attention grows <strong>quadratically with
+        sequence length</strong>. Lean toward a <em>moderate</em> vocabulary so the lookup tables don't dominate the
+        parameter budget.</p>
+      </div>
+    </section>
+
+    <section id="p1-bpe">
+      <div class="wrap">
+        <h3>BPE training — learning the merges</h3>
+        <p>Byte-Pair Encoding is greedy and simple. Start from the 256 byte tokens, then repeat: count adjacent pairs,
+        merge the most frequent one into a brand-new token, and record it — until the target vocabulary is reached.</p>
+        <ol>
+          <li>Start: <code>vocab = 256</code> byte tokens; encode the text to a byte sequence.</li>
+          <li><strong>Count</strong> every adjacent <em>pair</em>.</li>
+          <li>Pick the <strong>winner</strong> — the most frequent pair.</li>
+          <li><strong>Merge</strong>: mint a new id (256, 257, …), replace all occurrences, and record the merge <em>in order</em>.</li>
+          <li>Repeat until <code>vocab_size = 256 + num_merges</code>.</li>
+        </ol>
+        <p>Worked by hand on <code>aaabdaaabac</code>:</p>
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th>Round</th><th>Winner</th><th>Merge</th><th>Result</th></tr></thead>
+            <tbody>
+              <tr><td class="num">start</td><td>—</td><td>—</td><td class="mono">aaabdaaabac</td></tr>
+              <tr><td class="num">1</td><td class="mono">aa (4×)</td><td class="mono">aa → Z</td><td class="mono">ZabdZabac</td></tr>
+              <tr><td class="num">2</td><td class="mono">ab (2×)</td><td class="mono">ab → Y</td><td class="mono">ZYdZYac</td></tr>
+              <tr><td class="num">3</td><td class="mono">ZY (2×)</td><td class="mono">ZY → X</td><td class="mono">XdXac</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Notice merge 3 (<code>ZY</code>) is built <em>on top of</em> merges 1 and 2. That stacking is why encoding
+        must later replay merges in order — see below.</p>
+        <p class="hint">GPT-2's vocabulary of <strong>50,257</strong> is exactly <code>256</code> base bytes +
+        <code>50,000</code> merges + <code>1</code> special token (<code>&lt;|endoftext|&gt;</code>).</p>
+      </div>
+    </section>
+
+    <section id="p1-codec">
+      <div class="wrap">
+        <h3>encode / decode — and the one key insight</h3>
+        <p><strong>decode(ids)</strong> is a straight lookup: map each id to its bytes, concatenate them, then
+        <code>bytes.decode("utf-8", errors="replace")</code>. The <code>errors="replace"</code> matters — a byte-level
+        model can emit a sequence of bytes that isn't valid UTF-8, and instead of crashing, the invalid part becomes
+        the replacement character <code>�</code>.</p>
+        <p><strong>encode(text)</strong> is the subtle one: convert to bytes, then repeatedly apply the
+        <em>earliest-learned applicable merge</em> — the present pair with the <strong>lowest merge index</strong>.</p>
+        <div class="callout key">
+          <span class="tag">The key insight</span>
+          <p>Training picks merges by <strong>frequency</strong>. Encoding replays them strictly by <strong>order</strong>.
+          Why? Because later merges are built on earlier ones (the stacking above), and to reproduce the <em>exact</em>
+          tokenization the model was trained on, the merges must fire in the same order they were created.
+          <strong>Train by frequency · encode by order · decode by lookup.</strong></p>
+        </div>
+        <p class="hint">Edge case: <code>encode</code> loops <code>while len(ids) &gt;= 2</code> — with fewer than two
+        tokens there are no pairs, and taking <code>min</code> over an empty set would raise an error.</p>
+      </div>
+    </section>
+
+    <section id="p1-code">
+      <div class="wrap">
+        <h3>The code</h3>
+        <p>The whole tokenizer is six functions of pure standard-library Python — no dependencies. This is the
+        implementation as built in <code>src/tokenizer.py</code>.</p>
+      </div>
+      <div class="wrap wide">
+<pre><code><span class="k">def</span> <span class="f">get_stats</span>(ids):
+    <span class="c"># count every adjacent pair of ids</span>
+    counts = {}
+    <span class="k">for</span> p1, p2 <span class="k">in</span> <span class="f">zip</span>(ids, ids[<span class="s">1</span>:]):
+        counts[(p1, p2)] = counts.get((p1, p2), <span class="s">0</span>) + <span class="s">1</span>
+    <span class="k">return</span> counts
+
+<span class="k">def</span> <span class="f">merge</span>(ids, pair, idx):
+    <span class="c"># replace every occurrence of `pair` with the new id `idx`</span>
+    newids, i = [], <span class="s">0</span>
+    <span class="k">while</span> i &lt; <span class="f">len</span>(ids):
+        <span class="k">if</span> (i &lt; <span class="f">len</span>(ids) - <span class="s">1</span>) <span class="k">and</span> (ids[i], ids[i+<span class="s">1</span>]) == pair:
+            newids.append(idx); i += <span class="s">2</span>
+        <span class="k">else</span>:
+            newids.append(ids[i]); i += <span class="s">1</span>
+    <span class="k">return</span> newids
+
+<span class="k">def</span> <span class="f">train</span>(text, vocab_size):
+    <span class="k">assert</span> vocab_size &gt;= <span class="s">256</span>
+    num_merges = vocab_size - <span class="s">256</span>
+    ids = <span class="f">list</span>(text.encode(<span class="s">'utf-8'</span>))
+    merges = {}
+    vocab = {i: <span class="f">bytes</span>([i]) <span class="k">for</span> i <span class="k">in</span> <span class="f">range</span>(<span class="s">256</span>)}
+    <span class="k">for</span> i <span class="k">in</span> <span class="f">range</span>(num_merges):
+        stats = <span class="f">get_stats</span>(ids)
+        pair = <span class="f">max</span>(stats, key=stats.get)      <span class="c"># winner = most frequent</span>
+        idx = <span class="s">256</span> + i
+        ids = <span class="f">merge</span>(ids, pair, idx)
+        merges[pair] = idx                     <span class="c"># recorded in order</span>
+        vocab[idx] = vocab[pair[<span class="s">0</span>]] + vocab[pair[<span class="s">1</span>]]  <span class="c"># cumulative bytes</span>
+    <span class="k">return</span> merges, vocab
+
+<span class="k">def</span> <span class="f">encode</span>(text, merges):
+    ids = <span class="f">list</span>(text.encode(<span class="s">'utf-8'</span>))
+    <span class="k">while</span> <span class="f">len</span>(ids) &gt;= <span class="s">2</span>:
+        stats = <span class="f">get_stats</span>(ids)
+        pair = <span class="f">min</span>(stats, key=<span class="k">lambda</span> p: merges.get(p, <span class="f">float</span>(<span class="s">'inf'</span>)))  <span class="c"># lowest merge index</span>
+        <span class="k">if</span> pair <span class="k">not in</span> merges:
+            <span class="k">break</span>
+        ids = <span class="f">merge</span>(ids, pair, merges[pair])
+    <span class="k">return</span> ids
+
+<span class="k">def</span> <span class="f">decode</span>(ids, vocab):
+    tokens = <span class="s">b""</span>.join(vocab[idx] <span class="k">for</span> idx <span class="k">in</span> ids)
+    <span class="k">return</span> tokens.decode(<span class="s">'utf-8'</span>, errors=<span class="s">'replace'</span>)</code></pre>
+      </div>
+    </section>
+
+    <!-- INTERACTIVE LAB -->
+    <section id="p1-lab">
+      <div class="wrap wide">
+        <h3>Interactive lab — train a tokenizer live</h3>
+        <p>This runs a faithful JavaScript port of the six functions above, right in your browser. Type some text,
+        choose how many merges to learn, and watch BPE discover subwords — then see the round-trip verified.</p>
+
+        <div class="lab">
+          <div class="lab-head"><span class="badge">BPE lab</span></div>
+          <label for="lab-text" class="hint" style="display:block;margin-bottom:6px;">Training &amp; input text</label>
+          <textarea id="lab-text" spellcheck="false">Machine learning models learn patterns from data. A language model predicts the next token given previous tokens. Tokenization converts text into tokens, and tokens back into text.</textarea>
+
+          <div class="lab-controls">
+            <label>merges:
+              <input type="range" id="lab-merges" min="0" max="80" value="24">
+              <output id="lab-merges-out">24</output>
+            </label>
+            <button class="run" id="lab-run" type="button">Train &amp; tokenize</button>
+            <span class="hint">vocab size = 256 + merges</span>
+          </div>
+
+          <div class="stats" id="lab-stats" aria-live="polite"></div>
+
+          <h4>Tokenized — each colored block is one token</h4>
+          <div class="ttokens" id="lab-inline" aria-live="polite"></div>
+          <p class="hint" id="lab-rt"></p>
+
+          <h4>Token IDs — the integers the model actually sees</h4>
+          <div class="ids" id="lab-ids"></div>
+
+          <h4>Learned merges, in order</h4>
+          <div class="tablewrap">
+            <table>
+              <thead><tr><th>#</th><th>pair</th><th>→ id</th><th>means</th><th>count</th></tr></thead>
+              <tbody id="lab-merges-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- GOTCHAS -->
+    <section id="p1-gotchas">
+      <div class="wrap">
+        <h3>Why LLMs act weird — it's often the tokenizer</h3>
+        <p>Many famous failures aren't the model being unintelligent; they're artifacts of tokenization:</p>
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th>Symptom</th><th>Tokenizer cause</th></tr></thead>
+            <tbody>
+              <tr><td>Bad spelling / reversing words</td><td>letters are hidden <em>inside</em> multi-char tokens, so the model can't see them</td></tr>
+              <tr><td>Weak arithmetic</td><td>numbers split inconsistently (<code>677</code> vs <code>6</code>+<code>77</code>)</td></tr>
+              <tr><td>Worse in other languages</td><td>more tokens per word → less efficient, less effective training</td></tr>
+              <tr><td>“SolidGoldMagikarp” glitches</td><td>rare tokens that got an id but were barely trained → unstable embeddings</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="hint">Real GPT tokenizers also add a <strong>regex pre-split</strong> (so merges never cross letter/number/
+        punctuation boundaries) and <strong>special tokens</strong> like <code>&lt;|endoftext|&gt;</code>, inserted outside
+        the merge process. Libraries: <strong>tiktoken</strong> (bytes-first, inference-only) vs
+        <strong>SentencePiece</strong> (code-points-first, can train).</p>
+      </div>
+    </section>
+
+    <!-- ROADMAP -->
+    <section id="roadmap" class="phase">
+      <div class="wrap">
+        <p class="eyebrow">Upcoming</p>
+        <h2>The road ahead</h2>
+        <p>These phases will be filled in here as each is studied and built.</p>
+      </div>
+      <div class="wrap wide">
+        <div class="cards">
+          <div class="pcard"><div class="n">Phase 2</div><h4>Data pipeline</h4><p>Fetch &amp; clean arXiv title↔abstract pairs; tokenize; build a Dataset / DataLoader.</p></div>
+          <div class="pcard"><div class="n">Phase 3</div><h4>Transformer architecture</h4><p>Embeddings, self-attention, multi-head, residuals, layer norm, the feed-forward block.</p></div>
+          <div class="pcard"><div class="n">Phase 4</div><h4>Training loop</h4><p>Cross-entropy loss, AdamW, LR scheduling; overfit a tiny batch as a sanity check.</p></div>
+          <div class="pcard"><div class="n">Phase 5</div><h4>VRAM engineering</h4><p>Mixed precision (AMP), gradient accumulation, checkpointing — fit 12&nbsp;GB with no OOM.</p></div>
+          <div class="pcard"><div class="n">Phase 6</div><h4>Evaluation</h4><p>Perplexity, ROUGE, and sampling — temperature, top-k, top-p.</p></div>
+          <div class="pcard"><div class="n">Phase 7</div><h4>Inference &amp; showcase</h4><p>A generate script: title in → abstract out, with a polished demo.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- GLOSSARY -->
+    <section id="glossary" class="phase">
+      <div class="wrap">
+        <p class="eyebrow">Reference</p>
+        <h2>Glossary</h2>
+        <dl class="gloss">
+          <dt>Token</dt><dd>An integer id standing for a chunk of text (a byte, character, or sub-word), looked up in the vocabulary.</dd>
+          <dt>Code point</dt><dd>The integer Unicode assigns to a character (e.g. <code>A</code> = 65). Distinct from a byte.</dd>
+          <dt>UTF-8</dt><dd>A variable-length encoding (1–4 bytes/char) that turns code points into a byte stream.</dd>
+          <dt>BPE</dt><dd>Byte-Pair Encoding — repeatedly merges the most frequent adjacent pair of tokens into a new token.</dd>
+          <dt>Merge</dt><dd>A learned rule <code>(a, b) → new_id</code>. Merges are recorded in training order.</dd>
+          <dt>Vocabulary</dt><dd>The map from token id to its bytes; its size is a hyperparameter (<code>256 + num_merges</code>).</dd>
+          <dt>Round-trip</dt><dd>The correctness property <code>decode(encode(x)) == x</code>.</dd>
+          <dt>OOV</dt><dd>Out-of-vocabulary — a unit the tokenizer can't represent. Byte-level BPE never has this.</dd>
+        </dl>
+      </div>
+    </section>
+
+    <footer>
+      <div class="wrap">
+        <p>Trinity-AI · SLM Codex — Pillar I. Built phase by phase. Iteration 1: make it work. Iteration 2: make it clean.</p>
+      </div>
+    </footer>
+
+  </main>
+</div>
+
+<script>
+"use strict";
+/* ---------- Faithful JS port of src/tokenizer.py ---------- */
+const enc = new TextEncoder();
+const dec = new TextDecoder("utf-8"); // fatal:false -> invalid bytes become U+FFFD (== errors="replace")
+
+function getStats(ids){
+  const counts = new Map();
+  for(let i = 0; i < ids.length - 1; i++){
+    const key = ids[i] + "," + ids[i+1];
+    counts.set(key, (counts.get(key) || 0) + 1);
+  }
+  return counts;
+}
+function merge(ids, a, b, idx){
+  const out = [];
+  let i = 0;
+  while(i < ids.length){
+    if(i < ids.length - 1 && ids[i] === a && ids[i+1] === b){ out.push(idx); i += 2; }
+    else { out.push(ids[i]); i += 1; }
+  }
+  return out;
+}
+function train(text, vocabSize){
+  const numMerges = Math.max(0, vocabSize - 256);
+  let ids = Array.from(enc.encode(text));
+  const merges = [];                 // {a,b,idx,count} in order
+  const mergeIdx = new Map();        // "a,b" -> idx
+  const vocab = new Map();           // idx -> array of bytes
+  for(let i = 0; i < 256; i++) vocab.set(i, [i]);
+  for(let i = 0; i < numMerges; i++){
+    const stats = getStats(ids);
+    if(stats.size === 0) break;
+    let best = null, bestCount = -1;
+    for(const [key, count] of stats){ if(count > bestCount){ bestCount = count; best = key; } }
+    const [a, b] = best.split(",").map(Number);
+    const idx = 256 + i;
+    ids = merge(ids, a, b, idx);
+    merges.push({ a, b, idx, count: bestCount });
+    mergeIdx.set(best, idx);
+    vocab.set(idx, vocab.get(a).concat(vocab.get(b)));
+  }
+  return { merges, mergeIdx, vocab };
+}
+function encode(text, mergeIdx){
+  let ids = Array.from(enc.encode(text));
+  while(ids.length >= 2){
+    const stats = getStats(ids);
+    let best = null, bestRank = Infinity;
+    for(const key of stats.keys()){
+      const rank = mergeIdx.has(key) ? mergeIdx.get(key) : Infinity;
+      if(rank < bestRank){ bestRank = rank; best = key; }
+    }
+    if(best === null || !mergeIdx.has(best)) break;
+    const [a, b] = best.split(",").map(Number);
+    ids = merge(ids, a, b, mergeIdx.get(best));
+  }
+  return ids;
+}
+function decode(ids, vocab){
+  const bytes = [];
+  for(const id of ids){ const bs = vocab.get(id); if(bs) for(const x of bs) bytes.push(x); }
+  return dec.decode(new Uint8Array(bytes));
+}
+
+/* ---------- Rendering ---------- */
+const CHIP_TINTS = ["#E5E8FA","#E3F0EA","#FBEFD6","#F0E6F3","#E4EEF6","#F5E9E4","#E9ECEF","#EAF3E1"];
+function showBytes(str){ return str.replace(/ /g,"·").replace(/\n/g,"⏎"); }
+function tokenDisplay(id, vocab){
+  const bytes = vocab.get(id) || [];
+  const s = dec.decode(new Uint8Array(bytes));
+  if(s.includes("�")){   // token isn't printable on its own (raw/partial byte) -> show hex
+    return "⟨" + bytes.map(b => b.toString(16).padStart(2,"0")).join(" ") + "⟩";
+  }
+  return s;
+}
+
+function run(){
+  const text = document.getElementById("lab-text").value;
+  const merges = parseInt(document.getElementById("lab-merges").value, 10);
+  const vocabSize = 256 + merges;
+
+  const { merges: learned, mergeIdx, vocab } = train(text, vocabSize);
+  const ids = encode(text, mergeIdx);
+  const back = decode(ids, vocab);
+  const nbytes = enc.encode(text).length;
+  const ratio = ids.length ? (nbytes / ids.length) : 0;
+  const ok = (back === text);
+
+  // stats
+  document.getElementById("lab-stats").innerHTML =
+    stat(nbytes, "bytes in") +
+    stat(ids.length, "tokens out") +
+    stat(ratio.toFixed(2) + "×", "compression") +
+    stat(vocab.size, "vocab size") +
+    `<div class="stat ${ok ? "ok" : ""}"><span class="v">${ok ? "PASS" : "FAIL"}</span><span class="l">round-trip</span></div>`;
+
+  // colored inline view (tiktoken-style) — each colored block is one token
+  const inline = document.getElementById("lab-inline");
+  inline.innerHTML = "";
+  if(ids.length === 0){
+    inline.innerHTML = '<span class="hint">(empty text — nothing to tokenize)</span>';
+  } else {
+    ids.forEach((id, pos) => {
+      const span = document.createElement("span");
+      span.className = "t";
+      span.style.background = CHIP_TINTS[pos % CHIP_TINTS.length];  // cycle by position: neighbours always differ
+      span.textContent = tokenDisplay(id, vocab);   // real spaces/newlines preserved via white-space:pre-wrap
+      span.title = "token id " + id;
+      inline.appendChild(span);
+    });
+  }
+  // raw id array — text became a list of integers
+  document.getElementById("lab-ids").textContent = "[" + ids.join(", ") + "]";
+  document.getElementById("lab-rt").textContent =
+    ok ? "decode(encode(text)) === text  ✓  the round-trip holds."
+       : "Round-trip mismatch (unexpected).";
+
+  // merges table
+  const body = document.getElementById("lab-merges-body");
+  body.innerHTML = "";
+  learned.forEach((m, rank) => {
+    const means = showBytes(decode([m.idx], vocab));
+    const tr = document.createElement("tr");
+    tr.innerHTML =
+      `<td class="num">${rank}</td>` +
+      `<td class="mono">(${m.a}, ${m.b})</td>` +
+      `<td class="mono">${m.idx}</td>` +
+      `<td class="mono">"${means}"</td>` +
+      `<td class="num">${m.count}</td>`;
+    body.appendChild(tr);
+  });
+  if(!learned.length){
+    body.innerHTML = `<tr><td colspan="5" class="hint">0 merges — raw bytes only. Raise the slider.</td></tr>`;
+  }
+}
+function stat(v, l){ return `<div class="stat"><span class="v">${v}</span><span class="l">${l}</span></div>`; }
+
+/* ---------- Wiring ---------- */
+const mergesInput = document.getElementById("lab-merges");
+const mergesOut = document.getElementById("lab-merges-out");
+mergesInput.addEventListener("input", () => { mergesOut.textContent = mergesInput.value; });
+document.getElementById("lab-run").addEventListener("click", run);
+run(); // initial render
+
+/* ---------- Scrollspy ---------- */
+const spyLinks = Array.from(document.querySelectorAll("[data-spy]"));
+const byId = new Map(spyLinks.map(a => [a.getAttribute("data-spy"), a]));
+const obs = new IntersectionObserver((entries) => {
+  entries.forEach((e) => {
+    if(e.isIntersecting){
+      spyLinks.forEach(a => a.classList.remove("active"));
+      const link = byId.get(e.target.id);
+      if(link) link.classList.add("active");
+    }
+  });
+}, { rootMargin: "-45% 0px -50% 0px", threshold: 0 });
+document.querySelectorAll("main section[id]").forEach(s => obs.observe(s));
+</script>
+</body>
+</html>
