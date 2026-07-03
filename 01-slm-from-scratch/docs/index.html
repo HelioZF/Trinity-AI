@@ -110,6 +110,27 @@
     border-radius:5px; padding:1px 5px; }
   pre code{ background:none; border:none; padding:0; font-size:inherit; }
 
+  /* ---------- Interactive function cards ---------- */
+  .fn{ background:var(--card); border:1px solid var(--line); border-radius:14px; overflow:hidden; margin:22px 0;
+    box-shadow:0 1px 3px rgba(16,24,40,.04); }
+  .fn-head{ padding:15px 18px 14px; border-bottom:1px solid var(--line); }
+  .fn-sig{ font-family:var(--mono); font-size:15px; color:var(--accent); font-weight:700; word-break:break-word; }
+  .fn-doc{ font-size:14px; color:var(--muted); margin:7px 0 0; line-height:1.55; }
+  .fn > pre{ margin:0; border-radius:0; }
+  .fn-try{ padding:15px 18px; background:#FBFCFE; border-top:1px solid var(--line); }
+  .fn-try .try-lbl{ font-family:var(--mono); font-size:10px; letter-spacing:1.5px; text-transform:uppercase;
+    color:var(--accent); display:block; margin-bottom:11px; }
+  .fld{ display:flex; flex-wrap:wrap; gap:12px; margin-bottom:12px; }
+  .fld label{ display:flex; flex-direction:column; gap:5px; font-size:11px; letter-spacing:.4px;
+    text-transform:uppercase; color:var(--muted); flex:1 1 130px; }
+  .fld input, .fld textarea{ font-family:var(--mono); font-size:13px; padding:8px 10px; border:1px solid var(--line);
+    border-radius:7px; background:#fff; color:var(--ink); width:100%; }
+  .fld input:focus, .fld textarea:focus{ outline:2px solid var(--accent); outline-offset:0; border-color:transparent; }
+  .fld textarea{ min-height:56px; resize:vertical; line-height:1.5; }
+  .fn-out{ font-family:var(--mono); font-size:13px; background:#0F1420; color:#DCE3F0; border-radius:8px;
+    padding:11px 13px; overflow-x:auto; white-space:pre-wrap; word-break:break-word; line-height:1.65; }
+  .fn-hint{ font-size:12px; color:var(--faint); margin:9px 0 0; }
+
   /* ---------- Tables ---------- */
   .tablewrap{ overflow-x:auto; margin:18px 0; }
   table{ border-collapse:collapse; width:100%; font-size:15px; background:var(--card); border-radius:8px; overflow:hidden; }
@@ -516,29 +537,83 @@
 
     <section id="p1-code">
       <div class="wrap">
-        <h3>The code</h3>
-        <p>The whole tokenizer is six functions of pure standard-library Python — no dependencies. This is the
-        implementation as built in <code>src/tokenizer.py</code>.</p>
+        <h3>The code — function by function</h3>
+        <p>The whole tokenizer is five functions of pure standard-library Python — no dependencies. Each one below
+        carries its <strong>description</strong>, its <strong>source</strong>, and a <strong>live playground</strong>:
+        change the inputs and watch the return value update. This is the implementation in <code>src/tokenizer.py</code>.</p>
       </div>
       <div class="wrap wide">
+
+        <!-- get_stats -->
+        <div class="fn">
+          <div class="fn-head">
+            <div class="fn-sig">get_stats(ids) → dict[(int, int), int]</div>
+            <p class="fn-doc">Count every <em>adjacent pair</em> in a list of token ids, returning a dict that maps each
+            pair <code>(a, b)</code> to how many times it appears. It stays neutral about <em>which</em> pair matters —
+            that's the caller's job — so the same counter serves both <code>train</code> and <code>encode</code>. Runs
+            in <strong>O(n)</strong>.</p>
+          </div>
 <pre><code><span class="k">def</span> <span class="f">get_stats</span>(ids):
-    <span class="c"># count every adjacent pair of ids</span>
     counts = {}
     <span class="k">for</span> p1, p2 <span class="k">in</span> <span class="f">zip</span>(ids, ids[<span class="s">1</span>:]):
         counts[(p1, p2)] = counts.get((p1, p2), <span class="s">0</span>) + <span class="s">1</span>
-    <span class="k">return</span> counts
+    <span class="k">return</span> counts</code></pre>
+          <div class="fn-try">
+            <span class="try-lbl">Try it — count the pairs</span>
+            <div class="fld">
+              <label>ids (comma-separated integers)
+                <input type="text" id="gs-in" value="104, 101, 108, 108, 111" spellcheck="false">
+              </label>
+            </div>
+            <div class="fn-out" id="gs-out" aria-live="polite"></div>
+            <p class="fn-hint">Those are the UTF-8 bytes of “hello”. Try one item (<code>5</code>) or none — it returns <code>{}</code>, no crash.</p>
+          </div>
+        </div>
 
-<span class="k">def</span> <span class="f">merge</span>(ids, pair, idx):
-    <span class="c"># replace every occurrence of `pair` with the new id `idx`</span>
+        <!-- merge -->
+        <div class="fn">
+          <div class="fn-head">
+            <div class="fn-sig">merge(ids, pair, idx) → list[int]</div>
+            <p class="fn-doc">Replace every occurrence of <code>pair</code> with the single new id <code>idx</code>,
+            scanning left-to-right and never overlapping. Returns a <strong>new</strong> list — the input is untouched.
+            The <code>while</code> loop steps by 2 on a match (so a consumed element can't be reused). Runs in <strong>O(n)</strong>.</p>
+          </div>
+<pre><code><span class="k">def</span> <span class="f">merge</span>(ids, pair, idx):
     newids, i = [], <span class="s">0</span>
     <span class="k">while</span> i &lt; <span class="f">len</span>(ids):
         <span class="k">if</span> (i &lt; <span class="f">len</span>(ids) - <span class="s">1</span>) <span class="k">and</span> (ids[i], ids[i+<span class="s">1</span>]) == pair:
             newids.append(idx); i += <span class="s">2</span>
         <span class="k">else</span>:
             newids.append(ids[i]); i += <span class="s">1</span>
-    <span class="k">return</span> newids
+    <span class="k">return</span> newids</code></pre>
+          <div class="fn-try">
+            <span class="try-lbl">Try it — replace a pair</span>
+            <div class="fld">
+              <label>ids
+                <input type="text" id="mg-ids" value="5, 6, 6, 7, 6, 7" spellcheck="false">
+              </label>
+              <label>pair (two ids)
+                <input type="text" id="mg-pair" value="6, 7" spellcheck="false">
+              </label>
+              <label>idx (new id)
+                <input type="text" id="mg-idx" value="99" spellcheck="false">
+              </label>
+            </div>
+            <div class="fn-out" id="mg-out" aria-live="polite"></div>
+            <p class="fn-hint">Try <code>6, 6, 6</code> with pair <code>6, 6</code> → <code>[99, 6]</code>, not <code>[99, 99]</code> (non-overlapping).</p>
+          </div>
+        </div>
 
-<span class="k">def</span> <span class="f">train</span>(text, vocab_size):
+        <!-- train -->
+        <div class="fn">
+          <div class="fn-head">
+            <div class="fn-sig">train(text, vocab_size) → (merges, vocab)</div>
+            <p class="fn-doc">Learn a vocabulary from text. Repeatedly counts pairs, merges the most frequent, and records
+            it — until reaching <code>vocab_size</code>. Returns two dicts: <code>merges</code> maps <code>pair → id</code>
+            (for <code>encode</code>) and <code>vocab</code> maps <code>id → bytes</code> (for <code>decode</code>). Runs in
+            <strong>O(merges × n)</strong>.</p>
+          </div>
+<pre><code><span class="k">def</span> <span class="f">train</span>(text, vocab_size):
     <span class="k">assert</span> vocab_size &gt;= <span class="s">256</span>
     num_merges = vocab_size - <span class="s">256</span>
     ids = <span class="f">list</span>(text.encode(<span class="s">'utf-8'</span>))
@@ -551,21 +626,74 @@
         ids = <span class="f">merge</span>(ids, pair, idx)
         merges[pair] = idx                     <span class="c"># recorded in order</span>
         vocab[idx] = vocab[pair[<span class="s">0</span>]] + vocab[pair[<span class="s">1</span>]]  <span class="c"># cumulative bytes</span>
-    <span class="k">return</span> merges, vocab
+    <span class="k">return</span> merges, vocab</code></pre>
+          <div class="fn-try">
+            <span class="try-lbl">Try it — learn a vocabulary</span>
+            <div class="fld">
+              <label style="flex:1 1 100%;">text
+                <textarea id="tr-text" spellcheck="false">the tokenizer turns text into tokens and turns tokens back into text</textarea>
+              </label>
+              <label>vocab_size (≥ 256)
+                <input type="text" id="tr-vs" value="272" spellcheck="false">
+              </label>
+            </div>
+            <div class="fn-out" id="tr-out" aria-live="polite"></div>
+            <p class="fn-hint">Ask for more merges than the text can supply and it simply stops early — the vocab ends up smaller.</p>
+          </div>
+        </div>
 
-<span class="k">def</span> <span class="f">encode</span>(text, merges):
+        <!-- encode -->
+        <div class="fn">
+          <div class="fn-head">
+            <div class="fn-sig">encode(text, merges) → list[int]</div>
+            <p class="fn-doc">Turn text into token ids. Convert to UTF-8 bytes, then repeatedly apply the
+            <em>earliest-learned applicable merge</em> (lowest merge index) until none apply — replaying the merges in
+            training order. Runs in up to <strong>O(merges × n)</strong>.</p>
+          </div>
+<pre><code><span class="k">def</span> <span class="f">encode</span>(text, merges):
     ids = <span class="f">list</span>(text.encode(<span class="s">'utf-8'</span>))
     <span class="k">while</span> <span class="f">len</span>(ids) &gt;= <span class="s">2</span>:
         stats = <span class="f">get_stats</span>(ids)
-        pair = <span class="f">min</span>(stats, key=<span class="k">lambda</span> p: merges.get(p, <span class="f">float</span>(<span class="s">'inf'</span>)))  <span class="c"># lowest merge index</span>
+        pair = <span class="f">min</span>(stats, key=<span class="k">lambda</span> p: merges.get(p, <span class="f">float</span>(<span class="s">'inf'</span>)))
         <span class="k">if</span> pair <span class="k">not in</span> merges:
             <span class="k">break</span>
         ids = <span class="f">merge</span>(ids, pair, merges[pair])
-    <span class="k">return</span> ids
+    <span class="k">return</span> ids</code></pre>
+          <div class="fn-try">
+            <span class="try-lbl">Try it — apply learned merges to new text</span>
+            <div class="fld">
+              <label style="flex:1 1 100%;">text to encode
+                <input type="text" id="en-text" value="tokens into text" spellcheck="false">
+              </label>
+            </div>
+            <div class="fn-out" id="en-out" aria-live="polite"></div>
+            <p class="fn-hint">Trained on a fixed corpus (“the tokenizer turns text into tokens…”, 30 merges). Unseen words still encode — byte-level BPE has no OOV.</p>
+          </div>
+        </div>
 
-<span class="k">def</span> <span class="f">decode</span>(ids, vocab):
+        <!-- decode -->
+        <div class="fn">
+          <div class="fn-head">
+            <div class="fn-sig">decode(ids, vocab) → str</div>
+            <p class="fn-doc">Turn token ids back into text. Look up each id's bytes in <code>vocab</code>, concatenate
+            them, then decode as UTF-8 with <code>errors="replace"</code> — invalid byte sequences become <code>�</code>
+            instead of crashing. A pure <strong>lookup</strong>: no ordering, no merging. Runs in <strong>O(n)</strong>.</p>
+          </div>
+<pre><code><span class="k">def</span> <span class="f">decode</span>(ids, vocab):
     tokens = <span class="s">b""</span>.join(vocab[idx] <span class="k">for</span> idx <span class="k">in</span> ids)
     <span class="k">return</span> tokens.decode(<span class="s">'utf-8'</span>, errors=<span class="s">'replace'</span>)</code></pre>
+          <div class="fn-try">
+            <span class="try-lbl">Try it — bytes back to text (base vocab, ids 0–255)</span>
+            <div class="fld">
+              <label style="flex:1 1 100%;">ids (0–255)
+                <input type="text" id="de-ids" value="72, 101, 108, 108, 111, 33" spellcheck="false">
+              </label>
+            </div>
+            <div class="fn-out" id="de-out" aria-live="polite"></div>
+            <p class="fn-hint">Try <code>240, 159, 152, 128</code> (one emoji = 4 bytes → 😀) or a lone <code>128</code> (invalid UTF-8 → �).</p>
+          </div>
+        </div>
+
       </div>
     </section>
 
@@ -573,7 +701,7 @@
     <section id="p1-lab">
       <div class="wrap wide">
         <h3>Interactive lab — train a tokenizer live</h3>
-        <p>This runs a faithful JavaScript port of the six functions above, right in your browser. Type some text,
+        <p>This runs a faithful JavaScript port of the five functions above, right in your browser. Type some text,
         choose how many merges to learn, and watch BPE discover subwords — then see the round-trip verified.</p>
 
         <div class="lab">
@@ -823,6 +951,66 @@ const mergesOut = document.getElementById("lab-merges-out");
 mergesInput.addEventListener("input", () => { mergesOut.textContent = mergesInput.value; });
 document.getElementById("lab-run").addEventListener("click", run);
 run(); // initial render
+
+/* ---------- Per-function playgrounds ---------- */
+function parseInts(s){
+  return s.split(/[\s,]+/).filter(x => x !== "").map(Number).filter(n => Number.isInteger(n));
+}
+
+// get_stats(ids)
+const gsIn = document.getElementById("gs-in"), gsOut = document.getElementById("gs-out");
+function runGS(){
+  const stats = getStats(parseInts(gsIn.value));
+  const parts = [];
+  for(const [k, v] of stats){ const [a, b] = k.split(","); parts.push(`(${a}, ${b}): ${v}`); }
+  gsOut.textContent = "→ " + (parts.length ? "{ " + parts.join(",   ") + " }" : "{}   (need ≥ 2 ids to form a pair)");
+}
+gsIn.addEventListener("input", runGS); runGS();
+
+// merge(ids, pair, idx)
+const mgIds = document.getElementById("mg-ids"), mgPair = document.getElementById("mg-pair"),
+      mgIdx = document.getElementById("mg-idx"), mgOut = document.getElementById("mg-out");
+function runMG(){
+  const ids = parseInts(mgIds.value), pair = parseInts(mgPair.value), idx = Number(mgIdx.value);
+  if(pair.length !== 2){ mgOut.textContent = "⚠ pair must be exactly two ids, e.g. 6, 7"; return; }
+  if(!Number.isInteger(idx)){ mgOut.textContent = "⚠ idx must be a whole number"; return; }
+  mgOut.textContent = "→ [" + merge(ids, pair[0], pair[1], idx).join(", ") + "]";
+}
+[mgIds, mgPair, mgIdx].forEach(el => el.addEventListener("input", runMG)); runMG();
+
+// train(text, vocab_size)
+const trText = document.getElementById("tr-text"), trVs = document.getElementById("tr-vs"),
+      trOut = document.getElementById("tr-out");
+function runTR(){
+  let vs = Number(trVs.value);
+  if(!Number.isInteger(vs) || vs < 256){ trOut.textContent = "⚠ vocab_size must be an integer ≥ 256"; return; }
+  const { merges, vocab } = train(trText.value, vs);
+  if(!merges.length){ trOut.textContent = "→ 0 merges learned (raise vocab_size, or add more text)"; return; }
+  const lines = merges.map((m, r) => `${r}:  (${m.a}, ${m.b}) → ${m.idx}   "${showBytes(decode([m.idx], vocab))}"`);
+  trOut.textContent = "→ learned " + merges.length + " merges  |  final vocab size " + vocab.size + "\n" + lines.join("\n");
+}
+[trText, trVs].forEach(el => el.addEventListener("input", runTR)); runTR();
+
+// encode(text, merges) — trained once on a fixed corpus
+const enTrained = train("the tokenizer turns text into tokens and turns tokens back into text", 256 + 30);
+const enText = document.getElementById("en-text"), enOut = document.getElementById("en-out");
+function runEN(){
+  const ids = encode(enText.value, enTrained.mergeIdx);
+  enOut.textContent = "→ [" + ids.join(", ") + "]   (" + ids.length + " token" + (ids.length === 1 ? "" : "s") + ")";
+}
+enText.addEventListener("input", runEN); runEN();
+
+// decode(ids, vocab) — base-byte vocab (ids 0–255)
+const baseVocab = new Map();
+for(let i = 0; i < 256; i++) baseVocab.set(i, [i]);
+const deIds = document.getElementById("de-ids"), deOut = document.getElementById("de-out");
+function runDE(){
+  const ids = parseInts(deIds.value);
+  const bad = ids.filter(n => n < 0 || n > 255);
+  if(bad.length){ deOut.textContent = "⚠ this demo uses the base-byte vocab, so ids must be 0–255 (got " + bad.join(", ") + ")"; return; }
+  deOut.textContent = "→ \"" + decode(ids, baseVocab) + "\"";
+}
+deIds.addEventListener("input", runDE); runDE();
 
 /* ---------- Scrollspy ---------- */
 const spyLinks = Array.from(document.querySelectorAll("[data-spy]"));
