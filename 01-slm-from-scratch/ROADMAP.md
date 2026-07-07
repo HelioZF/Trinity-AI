@@ -62,7 +62,7 @@ Each phase has two parts:
 |-------|:---:|:---:|
 | 0 — Foundations & Setup | ✅ | ⬜ |
 | 1 — Tokenization | ✅ | 🔄 |
-| 2 — Data Pipeline | ⬜ | ⬜ |
+| 2 — Data Pipeline | 🔄 | ⬜ |
 | 3 — Transformer Architecture | ⬜ | ⬜ |
 | 4 — Training Loop | ⬜ | ⬜ |
 | 5 — VRAM Engineering | ⬜ | ⬜ |
@@ -71,4 +71,4 @@ Each phase has two parts:
 
 ⬜ not started · 🔄 in progress · ✅ done
 
-> **📍 You are here:** Phase 1 complete — byte-level BPE tokenizer built, reviewed, and refactored into a `Tokenizer` class (`src/tokenizer.py`), plus an interactive study Codex (`docs/index.html`). **Next: Phase 2 — Data Pipeline** (start with the *Study* column, then arXiv title↔abstract pairs → tokenize → `Dataset`/`DataLoader`).
+> **📍 You are here:** Phase 2 in progress — the **Study column is done** (train/val split & overfitting, batching tradeoffs, shuffling & unbiased gradients, `Dataset` vs `DataLoader` — taught Socratically, user answered well; no dedicated Karpathy video for this phase, taught directly by choice). **Next: Phase 2 Implement, step 1 — get the data:** discuss how to fetch arXiv (title, abstract) pairs for one narrow category (e.g. `cs.LG`) — the open question posed to the user was *"how might we actually get this data (API / pre-made dataset / scraping) and what are the tradeoffs?"* Then: clean → tokenize with `src/tokenizer.py` → `Dataset`/`DataLoader`.
