@@ -1,6 +1,9 @@
 # tokenizer
 
 class Tokenizer:
+    SEP_ID = 2048
+    EOT_ID = 2049
+    
     def __init__(self):
         self.merges = {}
         self.vocab = {i: bytes([i]) for i in range(256)}
@@ -34,7 +37,6 @@ class Tokenizer:
                 else:
                     file.write(f"[{s}] {idx}\n")
     
-    
     def load(self, path: str) -> None:
         """
         Load tokenizer merges and vocab from disk
@@ -52,6 +54,7 @@ class Tokenizer:
                 
         self.merges = merges
         self.vocab = vocab
+        self.register_special_tokens()
     
     @staticmethod
     def get_stats(ids: list[int]) -> dict[tuple[int, int], int]:
@@ -128,7 +131,8 @@ class Tokenizer:
             
         self.merges = merges
         self.vocab = vocab
-
+        self.register_special_tokens()
+        
     def decode(self, ids: list[int]) -> str:
         """
         Decode the given list of ids using the given vocabulary.
@@ -168,3 +172,7 @@ class Tokenizer:
             ids = self.merge(ids, pair, idx)
             
         return ids
+    
+    def register_special_tokens(self):
+        self.vocab[self.SEP_ID] = b"<|sep|>"
+        self.vocab[self.EOT_ID] = b"<|endoftext|>"

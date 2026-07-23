@@ -25,6 +25,8 @@ env/
 # ─── Model weights & checkpoints (can be GBs) ─────────
 */models/*
 !*/models/.gitkeep
+# trained tokenizers: tiny, canonical — machines must share identical ids
+!*/models/*.model
 *.pt
 *.pth
 *.ckpt
@@ -36,6 +38,8 @@ env/
 */tokenizer/*.json
 *.vocab
 *.merges
+# except the committed tokenizer's human-readable vocab (educational)
+!*/models/*.vocab
 
 # ─── Logs, experiment tracking, caches ────────────────
 runs/
