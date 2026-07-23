@@ -91,8 +91,17 @@ def build_dataset(category: str, target: int, batch_size: int = 100, out_dir: st
     json_path = os.path.join(out_dir, f"arxiv_{category.replace('.', '_')}.jsonl")
     ids_path  = os.path.join(out_dir, "paper_ids.txt")
     
-    seen = set()
-    count, start = 0,0
+    # Check existing papers
+    paper_ids_path = os.path.join(out_dir, "paper_ids.txt")
+    if os.path.exists(paper_ids_path):
+        with open (paper_ids_path, "r", encoding="utf-8") as f:
+            seen = set(line.strip() for line in f)
+            count = len(seen)
+    else:
+        seen = set()
+        count = 0
+        
+    start = 0
     with open(json_path, "a", encoding="utf-8") as jf, open(ids_path, "a", encoding="utf-8") as idf:
         while count < target:
             entries = parse_entries(fetch_batch(category, start, batch_size))
