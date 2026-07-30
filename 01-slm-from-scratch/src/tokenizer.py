@@ -3,6 +3,7 @@
 class Tokenizer:
     SEP_ID = 2048
     EOT_ID = 2049
+    PAD_ID = 2050
     
     def __init__(self):
         self.merges = {}
@@ -176,3 +177,5 @@ class Tokenizer:
     def register_special_tokens(self):
         self.vocab[self.SEP_ID] = b"<|sep|>"
         self.vocab[self.EOT_ID] = b"<|endoftext|>"
+        self.vocab[self.PAD_ID] = b"<|pad|>"
+

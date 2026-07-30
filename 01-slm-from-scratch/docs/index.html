@@ -270,12 +270,12 @@
 
     <nav class="nav-group" aria-label="Phase 2">
       <span class="nav-label">Phase 2 · Data Pipeline</span>
-      <a href="#phase-2" data-spy="phase-2">Overview</a>
+      <a href="#phase-2" data-spy="phase-2" class="done">Overview</a>
       <a href="#p2-study" data-spy="p2-study" class="sub">Datasets &amp; batching</a>
       <a href="#p2-data" data-spy="p2-data" class="sub">Getting the data</a>
       <a href="#p2-vocab" data-spy="p2-vocab" class="sub">Choosing vocab size</a>
       <a href="#p2-specials" data-spy="p2-specials" class="sub">Special tokens</a>
-      <a href="#p2-loader" data-spy="p2-loader" class="sub soon">Dataset / DataLoader</a>
+      <a href="#p2-loader" data-spy="p2-loader" class="sub">Dataset / DataLoader</a>
     </nav>
 
     <nav class="nav-group" aria-label="Field guide">
@@ -853,7 +853,7 @@
     <!-- ============ PHASE 2 ============ -->
     <section id="phase-2" class="phase">
       <div class="wrap">
-        <p class="eyebrow">Phase 2 · in progress</p>
+        <p class="eyebrow">Phase 2 · complete</p>
         <h2>Data pipeline</h2>
         <p class="lead">From 2,000 raw arXiv papers to shuffled batches of integer tensors — the bridge between the
         internet and the training loop.</p>
@@ -1096,10 +1096,33 @@ with shuffle:     [P1402 P88 P3 P957] [P16 P731 …] …  ← fair samples of th
 
     <section id="p2-loader">
       <div class="wrap">
-        <h3>Dataset / DataLoader — the last mile 🔨</h3>
-        <p><em>In progress.</em> A torch <code>Dataset</code> wrapping the tokenized sequences, and a
-        <code>DataLoader</code> adding shuffling and batching. This entry gets written when the code exists —
-        the codex documents what has actually been built and understood.</p>
+        <h3>Dataset / DataLoader — the last mile</h3>
+        <p>The final bridge into PyTorch splits along the bookshelf/librarian line. The
+        <strong><code>Dataset</code></strong> (the bookshelf) is a class with three methods:
+        <code>__init__</code> loads the tokenized JSONL, <code>__len__</code> answers “how many examples?”
+        (2,000), and <code>__getitem__(i)</code> hands over sequence <code>i</code> as a
+        <code>torch.tensor</code>. The <strong><code>DataLoader</code></strong> (the librarian) is built-in and
+        configured: <code>shuffle=True</code>, <code>batch_size=32</code>, and a custom
+        <code>collate_fn</code>.</p>
+        <p><strong>The ragged-batch problem:</strong> sequences range 51–769 tokens, but a batch must be a
+        rectangle. The collate function pads every sequence in the batch up to the batch's longest, using the
+        dedicated <strong><code>&lt;|pad|&gt;</code> token (id 2050)</strong> — appointed like its siblings, meaning
+        “no data here.” Never reuse a meaningful id as filler; and in Phase 4 the loss will
+        <code>ignore_index</code> the pads so the model isn't trained to predict nothing.</p>
+        <pre><code><span class="k">def</span> <span class="f">collate</span>(batch):
+    T = <span class="f">max</span>(<span class="f">len</span>(s) <span class="k">for</span> s <span class="k">in</span> batch)                      <span class="c"># longest in THIS batch</span>
+    out = torch.full((<span class="f">len</span>(batch), T), PAD_ID)          <span class="c"># rectangle of pads</span>
+    <span class="k">for</span> row, seq <span class="k">in</span> <span class="f">enumerate</span>(batch):
+        out[row, :<span class="f">len</span>(seq)] = seq                      <span class="c"># real ids over the pads</span>
+    <span class="k">return</span> out</code></pre>
+        <div class="callout">
+          <span class="tag">Done when — met ✓</span>
+          <p>Verified run: dataset size 2,000 → shuffled batch of shape <strong>(32, 577)</strong>,
+          <code>torch.int64</code>, pad fraction ≈ 0.40, row 0 decoding to a readable
+          <code>title&lt;|sep|&gt;abstract…</code>. A batch of (title, abstract) tensors with correct shapes —
+          <strong>Phase 2 complete.</strong> (The ~40% padding waste against the 769-token outlier is exactly why
+          the context-window decision opens Phase 3.)</p>
+        </div>
       </div>
     </section>
 

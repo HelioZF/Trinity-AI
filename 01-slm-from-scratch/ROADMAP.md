@@ -62,7 +62,7 @@ Each phase has two parts:
 |-------|:---:|:---:|
 | 0 — Foundations & Setup | ✅ | ⬜ |
 | 1 — Tokenization | ✅ | 🔄 |
-| 2 — Data Pipeline | 🔄 | ⬜ |
+| 2 — Data Pipeline | ✅ | ⬜ |
 | 3 — Transformer Architecture | ⬜ | ⬜ |
 | 4 — Training Loop | ⬜ | ⬜ |
 | 5 — VRAM Engineering | ⬜ | ⬜ |
@@ -71,4 +71,4 @@ Each phase has two parts:
 
 ⬜ not started · 🔄 in progress · ✅ done
 
-> **📍 You are here:** Phase 2 in progress. **Study ✅** and **Implement step 1 — get the data ✅.** `src/fetch_arxiv.py` fetches arXiv (title, abstract) pairs: `build_dataset("cs.LG", N)` queries a category → writes `data/arxiv_cs_LG.jsonl` (gitignored) + `data/paper_ids.txt` (committed id manifest); `restore_from_manifest()` rebuilds the *exact* dataset from the manifest on any machine (verified). Currently a **30-paper smoke test**. **Next:** (a) scale the dataset (`build_dataset("cs.LG", N)` for a real corpus); (b) **train the `Tokenizer` (`src/tokenizer.py`) on the abstracts**; (c) tokenize the pairs; (d) build the `Dataset`/`DataLoader` (torch → **desktop**). Done when a batch of (title, abstract) tensors loads with correct shapes. **⚠️ After a `git pull` on any machine, run `restore_from_manifest()` to rebuild the local data — the `.jsonl` isn't in git.**
+> **📍 You are here: Phase 2 ✅ complete — Phase 3 (Transformer Architecture) is next.** Phase 2 delivered: 2,000-paper cs.LG corpus (manifest-reproducible), tokenizer trained at vocab 2,048 + specials (`SEP=2048, EOT=2049, PAD=2050` → model vocab **2,051**, committed as `models/arxiv_2048.model`), `prepare_data.py` (sequences avg 317 / max 769), and `dataset.py` (`TitleAbstractDataset` + padded `DataLoader`, verified batch `(32, 577)`). See `notebooks/Phase-2-memo.md` and the Codex Phase 2 chapter. **Phase 3 starts with Study:** watch Karpathy's *"Let's build GPT: from scratch"*, then quiz → handwritten summary → build (Codex Phase 3 field guide has the config draft d_model 384 / 6 heads / 6 layers; the context-window size is an open decision — max seq 769 vs avg 317, decide with percentiles). **⚠️ Fresh machine after `git pull`: run `restore_from_manifest()` then `prepare_data.py` to rebuild the gitignored data.**
