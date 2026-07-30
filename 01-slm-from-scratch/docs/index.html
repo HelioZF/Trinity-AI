@@ -161,10 +161,18 @@
   .ttokens{ white-space:pre-wrap; overflow-wrap:anywhere; font-family:var(--mono); font-size:14.5px; line-height:2.15;
     background:#FBFCFE; border:1px solid var(--line); border-radius:9px; padding:12px 14px; margin:8px 0 4px; }
   .ttokens .t{ border-radius:2px; padding:3px 0; -webkit-box-decoration-break:clone; box-decoration-break:clone; }
+  .ttokens .sp{ background:var(--accent); color:#fff; font-weight:600; border-radius:4px; padding:3px 6px; margin:0 2px; }
   .ids{ font-family:var(--mono); font-size:13px; color:var(--muted); background:var(--code-bg); border:1px solid var(--line);
     border-radius:8px; padding:10px 12px; overflow-x:auto; white-space:pre-wrap; word-break:break-all; margin:8px 0 4px;
     font-variant-numeric:tabular-nums; }
   .hint{ font-size:13px; color:var(--faint); }
+  .bars{ display:flex; flex-direction:column; gap:6px; margin:12px 0; }
+  .bar-row{ display:flex; align-items:center; gap:10px; font-family:var(--mono); font-size:13px; }
+  .bar-lbl{ width:10ch; text-align:right; white-space:pre; }
+  .bar-track{ display:block; flex:1; background:var(--code-bg); border:1px solid var(--line); border-radius:5px; height:20px; overflow:hidden; }
+  .bar-fill{ display:block; height:100%; background:var(--accent); border-radius:4px; transition:width .15s ease; }
+  .bar-pct{ width:7ch; color:var(--muted); font-variant-numeric:tabular-nums; }
+  .bar-row.cut .bar-lbl{ color:var(--faint); text-decoration:line-through; }
 
   /* ---------- Cards (upcoming phases) ---------- */
   .cards{ display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:14px; margin:20px 0; }
@@ -260,13 +268,28 @@
       <a href="#p1-class" data-spy="p1-class" class="sub">The Tokenizer class</a>
     </nav>
 
-    <nav class="nav-group" aria-label="Upcoming">
-      <span class="nav-label">Upcoming</span>
-      <a href="#roadmap" data-spy="roadmap" class="soon">Phases 2–7</a>
+    <nav class="nav-group" aria-label="Phase 2">
+      <span class="nav-label">Phase 2 · Data Pipeline</span>
+      <a href="#phase-2" data-spy="phase-2">Overview</a>
+      <a href="#p2-study" data-spy="p2-study" class="sub">Datasets &amp; batching</a>
+      <a href="#p2-data" data-spy="p2-data" class="sub">Getting the data</a>
+      <a href="#p2-vocab" data-spy="p2-vocab" class="sub">Choosing vocab size</a>
+      <a href="#p2-specials" data-spy="p2-specials" class="sub">Special tokens</a>
+      <a href="#p2-loader" data-spy="p2-loader" class="sub soon">Dataset / DataLoader</a>
+    </nav>
+
+    <nav class="nav-group" aria-label="Field guide">
+      <span class="nav-label">Field guide · the road ahead</span>
+      <a href="#phase-3" data-spy="phase-3">Phase 3 · Transformer</a>
+      <a href="#phase-4" data-spy="phase-4">Phase 4 · Training loop</a>
+      <a href="#phase-5" data-spy="phase-5">Phase 5 · VRAM engineering</a>
+      <a href="#phase-6" data-spy="phase-6">Phase 6 · Evaluation</a>
+      <a href="#phase-7" data-spy="phase-7">Phase 7 · Inference</a>
     </nav>
 
     <nav class="nav-group" aria-label="Reference">
       <span class="nav-label">Reference</span>
+      <a href="#toolbox" data-spy="toolbox">Engineer's toolbox</a>
       <a href="#glossary" data-spy="glossary">Glossary</a>
     </nav>
   </aside>
@@ -326,6 +349,12 @@
         any programmer can learn from it. This page is the artifact of that second promise, filled in as we go.</p>
         <p>Every phase entry aims to answer four questions, in order: <strong>why</strong> the part exists,
         <strong>what</strong> the theory is, <strong>how</strong> it's built, and <strong>does it work</strong>.</p>
+        <p>Chapters come in two tiers, marked in each eyebrow. <strong>“Complete / in progress”</strong> chapters
+        document what has actually been built and understood, with the real numbers from this repo.
+        <strong>“Field guide”</strong> chapters (Phases 3–7) are the road ahead — full theory, figures, build order,
+        and pitfalls, written so the project can be continued <em>without a mentor</em>: study the linked resources,
+        follow the build order, check the “done when”. As each is built, its field guide gets upgraded with the real
+        results.</p>
       </div>
     </section>
 
@@ -821,22 +850,648 @@
       </div>
     </section>
 
-    <!-- ROADMAP -->
-    <section id="roadmap" class="phase">
+    <!-- ============ PHASE 2 ============ -->
+    <section id="phase-2" class="phase">
       <div class="wrap">
-        <p class="eyebrow">Upcoming</p>
-        <h2>The road ahead</h2>
-        <p>These phases will be filled in here as each is studied and built.</p>
+        <p class="eyebrow">Phase 2 · in progress</p>
+        <h2>Data pipeline</h2>
+        <p class="lead">From 2,000 raw arXiv papers to shuffled batches of integer tensors — the bridge between the
+        internet and the training loop.</p>
+        <div class="pipe" aria-hidden="true">
+          <span class="stage">arXiv API</span>
+          <span class="arrow">→</span>
+          <span class="stage">clean (title, abstract) pairs</span>
+          <span class="arrow">→</span>
+          <span class="stage tok">token ids</span>
+          <span class="arrow">→</span>
+          <span class="stage">Dataset / DataLoader</span>
+        </div>
+        <div class="callout">
+          <span class="tag">Done when</span>
+          <p>A batch of (title, abstract) <strong>tensors</strong> loads with the correct shapes, ready for the
+          transformer. Working corpus: <strong>2,000 cs.LG papers</strong> (2.28&nbsp;MB of abstracts; average
+          abstract 1,142 chars, average title 73).</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="p2-study">
+      <div class="wrap">
+        <h3>Datasets, batches, and why we shuffle</h3>
+        <p><strong><code>Dataset</code></strong> and <strong><code>DataLoader</code></strong> split one job in two.
+        The Dataset is <em>the data itself</em>: it knows how many examples exist and how to hand over example
+        <code>i</code>. The DataLoader is <em>how the data is delivered</em>: it shuffles, groups examples into
+        batches, and feeds the training loop.</p>
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th></th><th>Dataset</th><th>DataLoader</th></tr></thead>
+            <tbody>
+              <tr><td>role</td><td>the data itself</td><td>the delivery service</td></tr>
+              <tr><td>answers</td><td>“how many examples?” · “give me #i”</td><td>“next shuffled batch, please”</td></tr>
+              <tr><td>knows about</td><td>files, tokenized sequences</td><td>batch size, shuffling, workers</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h4>train / validation split</h4>
+        <p>Held-out examples are set aside <em>before</em> training. Training loss measures <em>memorization</em>;
+        <strong>validation</strong> loss — on papers the model has never seen — measures <em>learning</em>. When
+        training loss keeps falling while validation loss rises, the model is <strong>overfitting</strong>:
+        memorizing its textbook instead of learning the subject.</p>
+        <p class="hint">The same discipline validated our tokenizer: the vocab experiment measured compression on
+        <em>held-out</em> abstracts, never on the training sample.</p>
+
+        <h4>batching — a three-way tradeoff</h4>
+        <p>Examples are processed in <strong>batches</strong> (groups) rather than one-by-one or all-at-once:</p>
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th>batch size</th><th>VRAM</th><th>GPU throughput</th><th>gradient quality</th></tr></thead>
+            <tbody>
+              <tr><td>too small (1)</td><td>trivial</td><td>GPU starved — parallelism wasted</td><td>very noisy steps</td></tr>
+              <tr><td><strong>middle</strong></td><td><strong>fits 12 GB</strong></td><td><strong>GPU saturated</strong></td><td><strong>useful noise — helps generalize</strong></td></tr>
+              <tr><td>too large</td><td>💥 CUDA OOM</td><td>fast per step</td><td>smooth but each step over-committed</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>On a 12&nbsp;GB card, batch size (with sequence length) is the main knob we turn when memory runs out —
+        it's a <em>design parameter</em>, revisited for real in Phase 5.</p>
+
+        <h4>shuffling — unbiased batches</h4>
+        <p>Our arXiv file is <strong>date-ordered</strong>. Without shuffling, every batch would be a slice of one
+        era — “all 2020 papers”, then “all 2021 papers” — so each gradient step would push the model toward one
+        neighborhood of the data, and early epochs would be biased. Shuffling every epoch makes each batch a fair
+        random sample of the whole corpus:</p>
+        <div class="ids" aria-hidden="true">without shuffle:  [P1 P2 P3 P4] [P5 P6 P7 P8] …      ← neighbors in time, biased
+with shuffle:     [P1402 P88 P3 P957] [P16 P731 …] …  ← fair samples of the corpus</div>
+      </div>
+    </section>
+
+    <section id="p2-data">
+      <div class="wrap">
+        <h3>Getting the data: commit the recipe, not the data</h3>
+        <p>The pairs come from the <strong>arXiv API</strong> (scraping is off-limits; pre-made dumps are heavy).
+        The API returns <strong>Atom XML</strong>; a real parser (never regex-on-XML) extracts
+        <code>&lt;id&gt;</code>, <code>&lt;title&gt;</code>, <code>&lt;summary&gt;</code>, and a
+        <code>clean()</code> pass normalizes whitespace. Requests are paginated and rate-limited (~3&nbsp;s
+        between calls — API etiquette).</p>
+        <p>The interesting problem is <strong>reproducibility across machines</strong>: data files are too heavy
+        (and too re-creatable) for git. The pattern:</p>
       </div>
       <div class="wrap wide">
-        <div class="cards">
-          <div class="pcard"><div class="n">Phase 2</div><h4>Data pipeline</h4><p>Fetch &amp; clean arXiv title↔abstract pairs; tokenize; build a Dataset / DataLoader.</p></div>
-          <div class="pcard"><div class="n">Phase 3</div><h4>Transformer architecture</h4><p>Embeddings, self-attention, multi-head, residuals, layer norm, the feed-forward block.</p></div>
-          <div class="pcard"><div class="n">Phase 4</div><h4>Training loop</h4><p>Cross-entropy loss, AdamW, LR scheduling; overfit a tiny batch as a sanity check.</p></div>
-          <div class="pcard"><div class="n">Phase 5</div><h4>VRAM engineering</h4><p>Mixed precision (AMP), gradient accumulation, checkpointing — fit 12&nbsp;GB with no OOM.</p></div>
-          <div class="pcard"><div class="n">Phase 6</div><h4>Evaluation</h4><p>Perplexity, ROUGE, and sampling — temperature, top-k, top-p.</p></div>
-          <div class="pcard"><div class="n">Phase 7</div><h4>Inference &amp; showcase</h4><p>A generate script: title in → abstract out, with a polished demo.</p></div>
+        <figure class="fig" aria-label="Diagram: build_dataset writes the heavy JSONL (gitignored) and a tiny id manifest (committed). restore_from_manifest rebuilds the identical dataset on any machine from the manifest.">
+          <figcaption class="fig-head"><span class="fig-tag">Figure&nbsp;2</span> Commit the recipe, not the data</figcaption>
+          <div class="fig-body">
+            <div class="drow">
+              <div class="dnode"><span class="dnode-k">arXiv API · cs.LG</span><span class="dnode-v">276,587 papers available</span></div>
+              <span class="conn">→</span>
+              <div class="dnode core"><span class="dnode-k">build_dataset(category, target)</span><span class="dnode-v">query → parse → clean → append</span></div>
+            </div>
+            <div class="arrow" style="align-self:center;color:var(--faint);padding:6px 0;">↓ writes two files ↓</div>
+            <div class="drow">
+              <div class="dnode"><span class="dnode-k">data/arxiv_cs_LG.jsonl · GITIGNORED</span><span class="dnode-v">2,000 (id, title, abstract) — heavy</span></div>
+              <div class="dnode ids"><span class="dnode-k">data/paper_ids.txt · COMMITTED</span><span class="dnode-v">2,000 arXiv ids — tiny manifest</span></div>
+            </div>
+            <div class="arrow" style="align-self:center;color:var(--faint);padding:6px 0;">↓ on any other machine ↓</div>
+            <div class="drow">
+              <div class="dnode core"><span class="dnode-k">restore_from_manifest()</span><span class="dnode-v">fetch exactly those ids → identical dataset</span></div>
+            </div>
+          </div>
+          <p class="fig-cap">The manifest pins <em>which</em> papers; the script regenerates <em>the data</em>. A fresh
+          query would return different papers tomorrow — fetching by pinned ids cannot drift. Verified: delete the
+          JSONL → restore → identical.</p>
+        </figure>
+      </div>
+      <div class="wrap">
+        <div class="callout">
+          <span class="tag">Idempotency</span>
+          <p><code>build_dataset</code> seeds its <code>seen</code> set from the manifest on disk and counts from
+          <code>len(seen)</code> — so <code>target</code> means <em>total</em>, re-runs are no-ops when satisfied
+          (0.001&nbsp;s, zero network), and appends never duplicate.</p>
         </div>
+        <p class="hint">Methodology note: before writing the cleaner we <em>measured</em> the dirt — only ~2 of 50
+        abstracts actually needed whitespace fixes. <strong>Measure your data; don't assume it.</strong> The
+        cleaner stays (cheap, uniform), but now it's a decision, not a guess.</p>
+      </div>
+    </section>
+
+    <section id="p2-vocab">
+      <div class="wrap">
+        <h3>Choosing the vocabulary size — an experiment, not a guess</h3>
+        <p>Vocab size can't be <em>derived</em>, but it shouldn't be guessed. It's a <strong>bounded decision</strong>:
+        <em>calculate</em> the hard constraints, <em>measure</em> the tradeoff, then <em>judge</em> inside the
+        measured range.</p>
+        <div class="callout">
+          <span class="tag">The nested-merges trick</span>
+          <p>BPE training is greedy and deterministic, so the merge list is <strong>nested</strong>: training to
+          vocab 1,024 yields <em>exactly</em> the first 768 merges of a 4,096 run. Train <strong>once</strong> at the
+          biggest candidate, then truncate — <code>merges[:v−256]</code> — to simulate every smaller vocab for free.</p>
+        </div>
+        <p>One 121-second training run on a 400-abstract sample, evaluated on 30 <em>held-out</em> abstracts:</p>
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th>vocab</th><th>bytes/token</th><th>toks/abstract</th><th>vocab used</th><th>emb+out params @384</th></tr></thead>
+            <tbody>
+              <tr><td class="num">512</td><td class="num">2.22</td><td class="num">500</td><td class="num">99%</td><td class="num">0.39 M</td></tr>
+              <tr><td class="num">1,024</td><td class="num">3.01</td><td class="num">368</td><td class="num">95%</td><td class="num">0.79 M</td></tr>
+              <tr><td class="num"><strong>2,048 ✓</strong></td><td class="num">3.83</td><td class="num">289</td><td class="num">79%</td><td class="num">1.57 M</td></tr>
+              <tr><td class="num">4,096</td><td class="num">4.82</td><td class="num">230</td><td class="num">54%</td><td class="num">3.15 M</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p><strong>Three signals, one decision:</strong> compression keeps climbing, but <em>vocab used</em> collapses
+        (late merges live in the frequency long tail — tokens that exist but rarely fire become undertrained
+        “SolidGoldMagikarp” embeddings), while shorter sequences pay off <em>quadratically</em> in attention.</p>
+      </div>
+      <div class="wrap wide">
+        <figure class="fig" aria-label="Diagram: the two costs. Parameters scale with vocabulary size; attention cost scales with sequence length squared. A bigger vocab hurts the first and helps the second.">
+          <figcaption class="fig-head"><span class="fig-tag">Figure&nbsp;3</span> The two costs — never mix them up</figcaption>
+          <div class="fig-body">
+            <div class="drow">
+              <div class="dnode"><span class="dnode-k">① parameters · the model</span><span class="dnode-v">scales with VOCAB SIZE (linear)<br>embedding + output ≈ 2 × vocab × d_model<br>1,024 → 0.79 M &nbsp;·&nbsp; 2,048 → 1.57 M (2×)</span></div>
+              <div class="dnode"><span class="dnode-k">② attention · the work</span><span class="dnode-v">scales with SEQ LENGTH² (quadratic)<br>n = 368 → 135,424 cells<br>n = 289 → 83,521 cells (0.62× → −38%)</span></div>
+            </div>
+          </div>
+          <p class="fig-cap">Bigger vocab <strong>hurts ①</strong> (more embedding rows) and <strong>helps ②</strong>
+          (shorter sequences). The saving beats the cut because of the square: sequences 22% shorter ⇒
+          (1−0.22)² ≈ 0.61 ⇒ attention ~38% cheaper. General rule: <strong>attention cost ratio = (length ratio)²</strong>.</p>
+        </figure>
+      </div>
+      <div class="wrap">
+        <div class="callout key">
+          <span class="tag">The decision</span>
+          <p><strong>vocab_size = 2,048</strong> — trades 2× (still small) lookup params and 79% liveness for a 38%
+          attention discount on every future training step. And it's <em>reversible</em>: nested merges mean vocab
+          1,024 is literally <code>merges[:768]</code>, a truncation away. The final tokenizer was then trained on the
+          <strong>full corpus (titles + abstracts, 365&nbsp;s)</strong> and committed as
+          <code>models/arxiv_2048.model</code> — machines must share <em>identical</em> ids.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="p2-specials">
+      <div class="wrap">
+        <h3>Special tokens &amp; the anatomy of a training example</h3>
+        <p>The model needs two signals no text can provide: <em>“the title has ended — write the abstract”</em> and
+        <em>“the abstract is finished — stop.”</em> These are <strong>special tokens</strong>:
+        <code>&lt;|sep|&gt;</code> (id&nbsp;2048) and <code>&lt;|endoftext|&gt;</code> (id&nbsp;2049). They are
+        <strong>appointed, not learned</strong> — BPE's merge loop never creates them; we reserve the next free ids
+        above the trained vocab. Model vocabulary: 2,048 BPE + 2 specials = <strong>2,050</strong>
+        (the GPT-2 pattern: 50,256 + 1 = 50,257).</p>
+      </div>
+      <div class="wrap wide">
+        <figure class="fig" aria-label="Diagram: one training example is encode(title), then id 2048, then encode(abstract), then id 2049. At generation time the model receives the encoded title plus 2048 and produces abstract tokens until it emits 2049.">
+          <figcaption class="fig-head"><span class="fig-tag">Figure&nbsp;4</span> One training example</figcaption>
+          <div class="fig-body">
+            <div class="drow">
+              <div class="dnode"><span class="dnode-k">the prompt</span><span class="dnode-v">encode(title)</span></div>
+              <div class="dnode ids"><span class="dnode-k">boundary · “now write”</span><span class="dnode-v">[2048] &lt;|sep|&gt;</span></div>
+              <div class="dnode"><span class="dnode-k">the answer</span><span class="dnode-v">encode(abstract)</span></div>
+              <div class="dnode ids"><span class="dnode-k">stop signal</span><span class="dnode-v">[2049] &lt;|endoftext|&gt;</span></div>
+            </div>
+          </div>
+          <p class="fig-cap">At generation time we feed <code>encode(your_title) + [2048]</code> — the model's cue to
+          begin — and cut generation when it emits <code>2049</code>. Two specials suffice: position 0 already means
+          “title starts here”, and one boundary needs one marker. Every extra special costs an embedding row the
+          model must learn.</p>
+        </figure>
+
+        <div class="lab">
+          <div class="lab-head"><span class="badge">Sequence builder</span></div>
+          <p class="hint" style="margin:6px 0 12px;">Type a title and abstract — watch the training sequence assemble
+          (tokenizer: the demo corpus from the encode playground above).</p>
+          <div class="fld">
+            <label style="flex:1 1 100%;">title
+              <input type="text" id="sb-title" value="Tokenization for text models" spellcheck="false">
+            </label>
+            <label style="flex:1 1 100%;">abstract
+              <textarea id="sb-abs" spellcheck="false">The tokenizer turns text into tokens, and tokens back into text.</textarea>
+            </label>
+          </div>
+          <h4>The training sequence — encode(title) + [2048] + encode(abstract) + [2049]</h4>
+          <div class="ttokens" id="sb-inline" aria-live="polite"></div>
+          <div class="ids" id="sb-ids"></div>
+          <p class="hint">The blue chips are injected as <em>integers</em> — <code>encode()</code> can never produce
+          them from text.</p>
+        </div>
+      </div>
+      <div class="wrap">
+        <div class="callout key">
+          <span class="tag">Unforgeable boundaries</span>
+          <p>If the literal text <code>"&lt;|sep|&gt;"</code> is encoded, BPE sees only its <em>bytes</em> —
+          <code>60 124 115 101 112 124 62</code> — and emits ordinary ids that spell it out. <strong>Id 2048 is
+          unreachable from text</strong>: it exists nowhere in the merges, so no document can impersonate a boundary.
+          Specials are injected programmatically, after encoding. (Real tokenizers rely on this same property for
+          safety.) The only tokenizer change needed is on the <em>decode</em> side: register readable vocab entries —
+          <code>vocab[2048] = b"&lt;|sep|&gt;"</code> — after every vocab rebuild (<code>train</code> <em>and</em>
+          <code>load</code>), or decoding model output raises <code>KeyError</code>.</p>
+        </div>
+        <p>The <code>prepare_data.py</code> script applies the recipe to all 2,000 pairs <strong>once</strong>, writing
+        <code>data/tokenized_cs_LG.jsonl</code> — encode is O(m×n), so we precompute instead of re-encoding every
+        training run. Its length stats (especially <strong>max</strong>) size the Phase 3 context window.</p>
+        <p class="hint">Measured: 2,000 sequences in 144 s — <strong>avg 317 · max 769 · min 51</strong> tokens.
+        That 769 outlier against a 317 average is a classic long tail: the context-window call (truncate the tail
+        vs pay n² for it) is made at Phase 3, with percentiles in hand.</p>
+      </div>
+    </section>
+
+    <section id="p2-loader">
+      <div class="wrap">
+        <h3>Dataset / DataLoader — the last mile 🔨</h3>
+        <p><em>In progress.</em> A torch <code>Dataset</code> wrapping the tokenized sequences, and a
+        <code>DataLoader</code> adding shuffling and batching. This entry gets written when the code exists —
+        the codex documents what has actually been built and understood.</p>
+      </div>
+    </section>
+
+    <!-- ============ PHASE 3 · FIELD GUIDE ============ -->
+    <section id="phase-3" class="phase">
+      <div class="wrap">
+        <p class="eyebrow">Phase 3 · field guide — not yet built</p>
+        <h2>Transformer architecture</h2>
+        <p class="lead">Assemble the GPT decoder, module by module, until a forward pass turns a batch of token ids
+        into next-token logits.</p>
+        <div class="callout">
+          <span class="tag">📚 Study first</span>
+          <p>Andrej Karpathy — <a href="https://www.youtube.com/watch?v=kCc8FmEb1nY"><em>Let's build GPT: from
+          scratch, in code, spelled out</em></a> (the anchor video for this whole phase), and his
+          <a href="https://github.com/karpathy/nanoGPT">nanoGPT</a> repo as the reference implementation.
+          Watch → quiz yourself → handwrite a summary from memory → then build.</p>
+        </div>
+        <p><strong>Reference configuration</strong> (used in every example below — sized for the 12&nbsp;GB budget):</p>
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th>knob</th><th>value</th><th>why</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">vocab_size</td><td class="num">2,050</td><td>2,048 BPE + 2 specials (Phase 2)</td></tr>
+              <tr><td class="mono">d_model</td><td class="num">384</td><td>vector width — every token becomes 384 numbers</td></tr>
+              <tr><td class="mono">n_heads</td><td class="num">6</td><td>384 ÷ 6 = 64 dims per head</td></tr>
+              <tr><td class="mono">n_layers</td><td class="num">6</td><td>6 stacked transformer blocks</td></tr>
+              <tr><td class="mono">context</td><td class="num">384 (draft)</td><td>measured lengths: avg 317, max 769 — decide truncate-vs-extend with percentiles at build time</td></tr>
+              <tr><td class="mono">params</td><td class="num">≈ 12 M</td><td>≈ 1.6 M embeddings + ≈ 10.6 M blocks</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="wrap wide">
+        <figure class="fig" aria-label="Diagram: token ids flow through token plus positional embeddings, six transformer blocks (layer norm, attention, residual, layer norm, feed-forward, residual), a final layer norm, and a linear head producing logits over the vocabulary.">
+          <figcaption class="fig-head"><span class="fig-tag">Figure&nbsp;5</span> The GPT decoder — data flow and shapes</figcaption>
+          <div class="fig-body">
+            <div class="drow">
+              <div class="dnode ids"><span class="dnode-k">input · batch of sequences</span><span class="dnode-v">token ids — shape [B, T]</span></div>
+              <span class="conn">→</span>
+              <div class="dnode"><span class="dnode-k">embeddings</span><span class="dnode-v">token_emb[ids] + pos_emb[0…T-1] → [B, T, 384]</span></div>
+            </div>
+            <div class="arrow" style="align-self:center;color:var(--faint);padding:6px 0;">↓</div>
+            <div class="drow">
+              <div class="dnode core"><span class="dnode-k">× 6 transformer blocks (pre-norm)</span><span class="dnode-v">x = x + attention( LayerNorm(x) )<br>x = x + feed_forward( LayerNorm(x) )<br>shape stays [B, T, 384] throughout</span></div>
+            </div>
+            <div class="arrow" style="align-self:center;color:var(--faint);padding:6px 0;">↓</div>
+            <div class="drow">
+              <div class="dnode"><span class="dnode-k">final LayerNorm + linear head</span><span class="dnode-v">[B, T, 384] → [B, T, 2050]</span></div>
+              <span class="conn">→</span>
+              <div class="dnode ids"><span class="dnode-k">output · logits</span><span class="dnode-v">a score for every vocab token, at every position</span></div>
+            </div>
+          </div>
+          <p class="fig-cap">B = batch size, T = sequence length. The whole network is shape-preserving until the
+          head. <strong>Done-when in one line: the forward pass returns [B, T, 2050].</strong></p>
+        </figure>
+      </div>
+      <div class="wrap">
+        <h3>Positional embeddings — attention is order-blind</h3>
+        <p>Self-attention treats its input as a <em>set</em>: shuffle the tokens and the attention scores shuffle
+        with them — nothing in the math knows token 3 comes after token 2. So position must be <em>injected</em>: a
+        second learnable table <code>[context × d_model]</code>, one row per <em>position</em>, added to the token
+        embedding. Token identity + location, in one vector.</p>
+
+        <h3>Self-attention — every token asks questions</h3>
+        <p>Each token's vector emits three projections: a <strong>Query</strong> (“what am I looking for?”), a
+        <strong>Key</strong> (“what do I contain?”), and a <strong>Value</strong> (“what will I hand over if you
+        attend to me?”). Token i's attention to token j is the match between <code>q_i</code> and <code>k_j</code>:</p>
+        <pre><code>attention(Q, K, V) = softmax( Q·Kᵀ / √d_k  +  causal_mask ) · V
+
+shapes:  [B,T,384] → Q,K,V [B,6,T,64] → scores [B,6,T,T] → out [B,T,384]</code></pre>
+        <p>Two details carry the magic:</p>
+        <ul>
+          <li><strong>÷ √d_k</strong> — dot products of 64-dim vectors grow with dimension; unscaled, softmax
+          saturates into a one-hot and gradients die. Dividing by √64 = 8 keeps the scores in a healthy range.</li>
+          <li><strong>The causal mask</strong> — this is a <em>generator</em>: position i may only attend to
+          positions ≤ i. Future scores are set to −∞ before softmax (→ probability 0):</li>
+        </ul>
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th>query ↓ · key →</th><th>The</th><th>model</th><th>learns</th><th>fast</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">The</td><td>✓</td><td>−∞</td><td>−∞</td><td>−∞</td></tr>
+              <tr><td class="mono">model</td><td>✓</td><td>✓</td><td>−∞</td><td>−∞</td></tr>
+              <tr><td class="mono">learns</td><td>✓</td><td>✓</td><td>✓</td><td>−∞</td></tr>
+              <tr><td class="mono">fast</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="hint">The [T, T] score matrix is the n² object from Phase 2's vocab decision — here it is, in the
+        flesh. 🔁</p>
+        <p><strong>Multi-head:</strong> instead of one 384-dim attention, run <strong>6 parallel heads of 64 dims</strong>,
+        each free to learn a different <em>kind</em> of looking (syntax neighbors, long-range topic words, …), then
+        concatenate and project back to 384.</p>
+
+        <h3>Feed-forward, residuals, LayerNorm</h3>
+        <p><strong>Attention mixes <em>across</em> tokens; the FFN thinks <em>per</em> token</strong> — a two-layer
+        MLP applied at every position: 384 → 1536 → 384 with a GELU in between (the classic 4× expansion).
+        <strong>Residual connections</strong> (<code>x = x + sublayer(x)</code>) make each block a <em>refinement</em>
+        of the identity — the gradient superhighway that lets deep stacks train at all. <strong>LayerNorm</strong>
+        re-centers each token's vector before every sublayer (pre-norm, GPT-2 style), keeping activations stable.</p>
+
+        <div class="callout">
+          <span class="tag">🔨 Build order — verify shapes at every step</span>
+          <p>1) one attention head on a toy tensor → 2) add the causal mask (check: upper triangle is −∞) →
+          3) multi-head + output projection → 4) FFN → 5) one block with pre-norm + residuals →
+          6) stack 6 blocks → 7) embeddings (token + positional) → 8) final LN + head. Assert the expected shape
+          after every module — shape bugs are 90% of transformer bugs.</p>
+        </div>
+        <div class="callout key">
+          <span class="tag">⚠️ Pitfalls</span>
+          <p><strong>A forgotten mask doesn't crash — it cheats.</strong> Training loss looks miraculously good
+          (the model peeks at the answer) and generation is garbage. If val loss seems too good to be true, check the
+          mask first. Also: softmax over the wrong dimension, and forgetting √d_k, both train — badly.</p>
+        </div>
+        <div class="callout">
+          <span class="tag">Done when</span>
+          <p>A forward pass on a real batch returns logits of shape <code>[B, T, 2050]</code>, and the parameter
+          count printed by a quick loop over <code>model.parameters()</code> lands near ~12 M.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ PHASE 4 · FIELD GUIDE ============ -->
+    <section id="phase-4" class="phase">
+      <div class="wrap">
+        <p class="eyebrow">Phase 4 · field guide — not yet built</p>
+        <h2>Training loop</h2>
+        <p class="lead">Teach the transformer to predict the next token — and prove the wiring works by making it
+        memorize a tiny batch first.</p>
+        <div class="callout">
+          <span class="tag">📚 Study first</span>
+          <p>The training half of <a href="https://www.youtube.com/watch?v=kCc8FmEb1nY"><em>Let's build GPT</em></a>;
+          for optimizer depth, Karpathy's earlier makemore parts (backprop intuition carries the load).</p>
+        </div>
+
+        <h3>The objective: cross-entropy on the next token</h3>
+        <p>At every position the model outputs logits over 2,050 tokens; the target is simply <em>the token that
+        actually came next</em>. Cross-entropy = <code>−log p(target)</code>, averaged over positions:</p>
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th>loss</th><th>p(correct token)</th><th>meaning</th></tr></thead>
+            <tbody>
+              <tr><td class="num">7.63</td><td class="num">1/2050 ≈ 0.05%</td><td><strong>ln(2050) — the untrained baseline.</strong> Your very first loss should land here; if not, there's a bug.</td></tr>
+              <tr><td class="num">3.0</td><td class="num">≈ 5%</td><td>learning real structure</td></tr>
+              <tr><td class="num">1.0</td><td class="num">≈ 37%</td><td>strong (on this task, suspiciously strong — check for leaks)</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p><strong>The input/target shift</strong> — one sequence teaches T lessons in parallel:</p>
+        <div class="ids" aria-hidden="true">sequence:  [ 318  42  901  77  2049 ]
+inputs  x: [ 318  42  901  77 ]        ← ids[:-1]
+targets y: [  42 901   77 2049 ]       ← ids[1:]   (each position predicts its right neighbor)</div>
+
+        <h3>AdamW and the learning-rate schedule</h3>
+        <p><strong>AdamW</strong> keeps a per-parameter memory of gradient direction (momentum) and magnitude
+        (variance), adapting each parameter's effective step — with weight decay applied <em>decoupled</em> from the
+        gradient (the W). Starting knobs that work: <code>lr ≈ 3e-4</code>, <code>weight_decay 0.1</code>, default
+        betas. Schedule: a short <strong>warmup</strong> (Adam's statistics are noise at step 0) then
+        <strong>cosine decay</strong>.</p>
+
+        <h3>The loop itself</h3>
+        <pre><code><span class="k">for</span> step <span class="k">in</span> range(max_steps):
+    x, y = next_batch(train_loader)            <span class="c"># [B,T] ids, [B,T] shifted targets</span>
+    logits = model(x)                          <span class="c"># [B,T,2050]</span>
+    loss = cross_entropy(logits, y)            <span class="c"># ignore_index for padding!</span>
+    optimizer.zero_grad()
+    loss.backward()                            <span class="c"># 🔁 micrograd, at industrial scale</span>
+    optimizer.step()
+    <span class="k">if</span> step % eval_every == <span class="s">0</span>:
+        validate()                             <span class="c"># model.eval() + torch.no_grad()</span>
+        save_checkpoint(model, optimizer, step)</code></pre>
+
+        <div class="callout key">
+          <span class="tag">The golden sanity check</span>
+          <p><strong>Before any real run: overfit ONE tiny batch.</strong> Loop the same 4 examples until loss →
+          ~0. A network that cannot <em>memorize</em> 4 examples has broken wiring — find the bug now, not after an
+          hour of training. Only then train on real data and watch train <em>and</em> validation loss together
+          (🔁 overfitting, Phase 2).</p>
+        </div>
+        <div class="callout">
+          <span class="tag">⚠️ Pitfalls</span>
+          <p>Forgetting <code>optimizer.zero_grad()</code> (gradients accumulate silently); validating without
+          <code>torch.no_grad()</code> (VRAM balloons); computing loss on padding tokens (use
+          <code>ignore_index</code>); leaving the DataLoader unshuffled.</p>
+        </div>
+        <div class="callout">
+          <span class="tag">Done when</span>
+          <p>Loss goes down on a small sample — first to ~0 on the tiny batch (memorization), then meaningfully
+          below the 7.63 baseline on real data.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ PHASE 5 · FIELD GUIDE ============ -->
+    <section id="phase-5" class="phase">
+      <div class="wrap">
+        <p class="eyebrow">Phase 5 · field guide — not yet built</p>
+        <h2>VRAM engineering</h2>
+        <p class="lead">Make a real training run fit — and stay — inside 12&nbsp;GB. This is where the hardware
+        constraint becomes engineering.</p>
+        <div class="callout">
+          <span class="tag">📚 Study first</span>
+          <p>Karpathy — <a href="https://www.youtube.com/watch?v=l8pRSuU81PU"><em>Let's reproduce GPT-2 (124M)</em></a>
+          — the practical masterclass in memory/throughput engineering (AMP, fused ops, accumulation).</p>
+        </div>
+        <h3>Where the memory actually goes</h3>
+      </div>
+      <div class="wrap wide">
+        <figure class="fig" aria-label="Diagram: VRAM is consumed by parameters, gradients, optimizer states (all fixed), and activations, which scale with batch size and sequence length squared and dominate.">
+          <figcaption class="fig-head"><span class="fig-tag">Figure&nbsp;6</span> The VRAM budget of our ~12 M model (fp32)</figcaption>
+          <div class="fig-body">
+            <div class="drow">
+              <div class="dnode"><span class="dnode-k">parameters</span><span class="dnode-v">12 M × 4 B ≈ 48 MB</span></div>
+              <div class="dnode"><span class="dnode-k">gradients</span><span class="dnode-v">one per param ≈ 48 MB</span></div>
+              <div class="dnode"><span class="dnode-k">AdamW states</span><span class="dnode-v">2 per param ≈ 96 MB</span></div>
+              <div class="dnode core"><span class="dnode-k">activations · THE ELASTIC GIANT</span><span class="dnode-v">every intermediate tensor kept for backward —<br>scales with B and with T² (attention scores [B,6,T,T]!)<br>B=32, T=384: scores alone ≈ 113 MB <em>per layer</em></span></div>
+            </div>
+          </div>
+          <p class="fig-cap">The fixed costs (~200 MB) are trivial for a small model — <strong>activations dominate
+          and are the knob</strong>. Batch size and sequence length are what you tune when memory runs out; params
+          only matter again when the model grows.</p>
+        </figure>
+      </div>
+      <div class="wrap">
+        <h3>The three techniques</h3>
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th>technique</th><th>what it does</th><th>cost</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Mixed precision (AMP)</strong></td><td>run activations/matmuls in 16-bit (≈ half the activation memory, tensor-core speed); keep master weights fp32; scale the loss if fp16</td><td>nearly free — the default ON</td></tr>
+              <tr><td><strong>Gradient accumulation</strong></td><td>simulate a big batch: run K micro-batches, <code>loss/K</code>, <code>backward()</code> each, <code>step()</code> once — effective batch = micro × K</td><td>time, not memory</td></tr>
+              <tr><td><strong>Gradient checkpointing</strong></td><td>don't store mid-block activations; recompute them during backward</td><td>~30% slower for a big memory win</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout key">
+          <span class="tag">⚠️ The OOM debugging ladder</span>
+          <p>When <code>CUDA out of memory</code> hits, climb in order: ① halve the batch → ② gradient accumulation
+          to restore the effective batch → ③ AMP if not already on → ④ shorten the context → ⑤ checkpointing →
+          ⑥ shrink the model. Watch <code>torch.cuda.memory_allocated()</code> to see which knob actually moved the
+          needle — 🔁 measure, don't assume.</p>
+        </div>
+        <div class="callout">
+          <span class="tag">Done when</span>
+          <p>A real training run is stable for hours on the RTX 3060 — no OOM, GPU well utilized, loss curves logged.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ PHASE 6 · FIELD GUIDE ============ -->
+    <section id="phase-6" class="phase">
+      <div class="wrap">
+        <p class="eyebrow">Phase 6 · field guide — not yet built</p>
+        <h2>Evaluation &amp; sampling</h2>
+        <p class="lead">Quality is meaningless until measured — perplexity for fluency, ROUGE for content, and
+        sampling strategies for generation itself.</p>
+
+        <h3>Perplexity — fluency, in one number</h3>
+        <p><code>perplexity = e^(average cross-entropy on the validation set)</code> — intuitively, <em>“among how
+        many tokens is the model effectively guessing?”</em> Computed with <code>model.eval()</code> +
+        <code>torch.no_grad()</code>, never on training data:</p>
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th>val loss</th><th>perplexity</th><th>reading</th></tr></thead>
+            <tbody>
+              <tr><td class="num">7.63</td><td class="num">2,050</td><td>random — guessing the whole vocab</td></tr>
+              <tr><td class="num">4.0</td><td class="num">≈ 55</td><td>real structure learned</td></tr>
+              <tr><td class="num">2.5</td><td class="num">≈ 12</td><td>strong for a 12 M model on 2,000 papers</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>ROUGE — did it write about the right things?</h3>
+        <p>Generate an abstract from a validation title, compare n-gram overlap with the <em>real</em> abstract:
+        ROUGE-1 (words), ROUGE-2 (bigrams), ROUGE-L (longest common subsequence). It's a rough content proxy — treat
+        it as a signal, not a verdict; read the generations too.</p>
+
+        <h3>Sampling — how the model actually speaks</h3>
+        <p>Greedy argmax loops and repeats. Real generation samples from the distribution, shaped by:</p>
+        <ul>
+          <li><strong>Temperature</strong> — divide logits by T before softmax. T→0: argmax. T=1: honest. T&gt;1: chaos.</li>
+          <li><strong>Top-k</strong> — keep only the k most likely tokens, renormalize, sample.</li>
+          <li><strong>Top-p</strong> — keep the smallest set whose cumulative probability ≥ p (adapts k per step).</li>
+        </ul>
+
+        <div class="lab">
+          <div class="lab-head"><span class="badge">Sampling lab</span></div>
+          <p class="hint" style="margin:6px 0 12px;">A toy next-token distribution after the prompt “machine …”.
+          Drag the temperature; set top-k. Watch probability mass move.</p>
+          <div class="lab-controls">
+            <label>temperature:
+              <input type="range" id="sm-temp" min="0.1" max="2.5" step="0.1" value="1.0">
+              <output id="sm-temp-out">1.0</output>
+            </label>
+            <label>top-k:
+              <input type="range" id="sm-topk" min="1" max="6" step="1" value="6">
+              <output id="sm-topk-out">6</output>
+            </label>
+          </div>
+          <div class="bars" id="sm-bars" aria-live="polite"></div>
+          <p class="hint">Low T sharpens toward “ learning”; high T flattens toward uniform — even “ banana” gets a
+          chance. Top-k simply cuts the tail before renormalizing.</p>
+        </div>
+
+        <div class="callout">
+          <span class="tag">Done when</span>
+          <p>Validation perplexity is computed and tracked across checkpoints, and generated abstracts are
+          readable — coherent ML-flavored prose, even if the “facts” are invented (they will be; that's what a
+          12&nbsp;M-parameter draft-writer does).</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ PHASE 7 · FIELD GUIDE ============ -->
+    <section id="phase-7" class="phase">
+      <div class="wrap">
+        <p class="eyebrow">Phase 7 · field guide — not yet built</p>
+        <h2>Inference &amp; showcase</h2>
+        <p class="lead">Package everything into <code>generate.py</code>: a title goes in, a draft abstract comes
+        out — on any machine, from the committed artifacts.</p>
+        <h3>The autoregressive loop</h3>
+        <pre><code>ids = tok.encode(title) + [Tokenizer.SEP_ID]        <span class="c"># the cue: “now write the abstract”</span>
+<span class="k">while</span> len(ids) &lt; max_len:
+    logits = model(ids[-context:])                  <span class="c"># crop to the context window</span>
+    next_id = sample(logits[-1], temperature, top_k)
+    <span class="k">if</span> next_id == Tokenizer.EOT_ID: <span class="k">break</span>          <span class="c"># the model says “done”</span>
+    ids.append(next_id)
+abstract = tok.decode(ids_after_sep)                <span class="c"># text world, re-entered 🔁</span></code></pre>
+        <p>One generated token at a time, each fed back as input — the loop is the reason generation is slow, and
+        why real systems cache attention keys/values (the <em>KV cache</em> — an optional optimization here).</p>
+        <div class="pipe" aria-hidden="true">
+          <span class="stage">title</span><span class="arrow">→</span>
+          <span class="stage tok">encode + &lt;|sep|&gt;</span><span class="arrow">→</span>
+          <span class="stage">model · loop until &lt;|endoftext|&gt;</span><span class="arrow">→</span>
+          <span class="stage tok">decode</span><span class="arrow">→</span>
+          <span class="stage">draft abstract</span>
+        </div>
+        <h3>Packaging &amp; the honest README</h3>
+        <p>Loading is pure Phase-2 discipline: checkpoint from <code>models/</code>, tokenizer via
+        <code>Tokenizer().load("models/arxiv_2048.model")</code>, data reproducible from the manifest. The README
+        shows real examples — including failures — and states the honest value: a <strong>local, private,
+        from-scratch</strong> draft generator that <em>sounds</em> like cs.LG, built to learn how every part works.
+        The model will fabricate citations and results; say so proudly, it was never the point.</p>
+        <div class="callout">
+          <span class="tag">Done when</span>
+          <p>Anyone can clone the repo, restore the data, and run one command:
+          <code>python src/generate.py "Attention Is All You Need"</code> → a plausible draft abstract.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ TOOLBOX ============ -->
+    <section id="toolbox" class="phase">
+      <div class="wrap">
+        <p class="eyebrow">Reference</p>
+        <h2>The engineer's toolbox</h2>
+        <p>Cross-cutting tools picked up along the way — they apply to every phase.</p>
+
+        <h3>Big O in sixty seconds</h3>
+        <p>Big O describes how running time <em>grows</em> as input grows — the shape, not the seconds. Constants
+        don't matter: <code>3n + 7</code> steps is still O(n). Read it off the code by counting loops:</p>
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th>shape</th><th>name</th><th>double the input →</th><th>in this project</th></tr></thead>
+            <tbody>
+              <tr><td>one lookup</td><td class="mono">O(1)</td><td>same time</td><td>dict/vocab lookups</td></tr>
+              <tr><td>one pass</td><td class="mono">O(n)</td><td>2× time</td><td><code>get_stats</code>, <code>merge</code>, <code>decode</code></td></tr>
+              <tr><td>a pass per merge</td><td class="mono">O(m×n)</td><td>—</td><td><code>train</code>, <code>encode</code> (why we precompute!)</td></tr>
+              <tr><td>all-pairs table</td><td class="mono">O(n²)</td><td><strong>4×</strong> time</td><td>attention (Phase 3)</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="hint">Worked instance of the n² rule: sequences 500 vs 368 tokens → 500²∕368² ≈ 1.85 — nearly
+        double the attention cost for 36% more length.</p>
+
+        <h3>Embeddings are weights</h3>
+        <p>A token id is a meaningless label, so each token gets a <strong>learnable vector</strong> of
+        <code>d_model</code> numbers (we sketch with 384). The embedding table is a matrix of shape
+        <code>[vocab_size × d_model]</code> — <em>one row per token</em> — and it is trained by backprop like any
+        other weight. Looking up row <code>i</code> is mathematically identical to multiplying a one-hot vector by
+        the matrix; the lookup is just the fast shortcut. That's <em>why</em> similar tokens end up with similar
+        vectors: gradient descent pushes them there.</p>
+        <p class="hint">Two independent knobs: <code>vocab_size</code> sets the number of <em>rows</em> (params grow
+        linearly with it); <code>d_model</code> sets the <em>width</em> — chosen separately. Neither changes the
+        other.</p>
+
+        <h3>Decide like an engineer</h3>
+        <p>Recurring method, worth naming: <strong>calculate → measure → judge</strong>. Calculate the hard
+        constraints (params, time). Measure the real tradeoff on held-out data (the vocab experiment). Then make a
+        <em>defended</em> judgment inside the bounded range — and prefer <strong>reversible</strong> decisions
+        (nested merges made vocab size a truncation away). Corollary: <strong>measure, don't assume</strong> —
+        the data will surprise you (the whitespace that mostly wasn't there; the pip index that swallowed PyPI).</p>
       </div>
     </section>
 
@@ -854,6 +1509,39 @@
           <dt>Vocabulary</dt><dd>The map from token id to its bytes; its size is a hyperparameter (<code>256 + num_merges</code>).</dd>
           <dt>Round-trip</dt><dd>The correctness property <code>decode(encode(x)) == x</code>.</dd>
           <dt>OOV</dt><dd>Out-of-vocabulary — a unit the tokenizer can't represent. Byte-level BPE never has this.</dd>
+          <dt>Special token</dt><dd>An id <em>appointed</em> outside BPE (e.g. <code>&lt;|sep|&gt;</code>=2048, <code>&lt;|endoftext|&gt;</code>=2049) — injected programmatically, unreachable from text, registered decode-side.</dd>
+          <dt>Embedding</dt><dd>The learnable vector behind each token id; the table is <code>[vocab × d_model]</code>, one row per token, trained like any weight (lookup ≡ one-hot × matrix).</dd>
+          <dt>d_model</dt><dd>The width of every embedding/hidden vector — chosen independently of vocab size.</dd>
+          <dt>Context window</dt><dd>The maximum sequence length the model accepts; attention cost grows with its square.</dd>
+          <dt>Dataset</dt><dd>“The data itself” — knows how many examples exist and how to return example <code>i</code>.</dd>
+          <dt>DataLoader</dt><dd>“The delivery” — shuffles the Dataset and serves it in batches to the training loop.</dd>
+          <dt>Batch</dt><dd>A group of examples processed in one step — sized to balance VRAM, GPU throughput, and gradient noise.</dd>
+          <dt>Epoch</dt><dd>One full pass over the training data; the data is re-shuffled between epochs.</dd>
+          <dt>Train/validation split</dt><dd>Held-out examples that measure <em>learning</em> instead of <em>memorization</em>.</dd>
+          <dt>Overfitting</dt><dd>Training loss falls while validation loss rises — the model memorizes its textbook.</dd>
+          <dt>Manifest</dt><dd>A committed list of exact ids that pins <em>which</em> data a machine should regenerate — commit the recipe, not the data.</dd>
+          <dt>Idempotent</dt><dd>Safe to re-run: same command, same end state, no duplicates (e.g. <code>build_dataset</code>, <code>restore_from_manifest</code>).</dd>
+          <dt>Compression ratio</dt><dd>Bytes of text per token (higher = shorter sequences); the measurable payoff of a bigger vocab.</dd>
+          <dt>Big O</dt><dd>How running time <em>grows</em> with input size — O(1) lookup, O(n) pass, O(n²) all-pairs; constants ignored.</dd>
+          <dt>Logits</dt><dd>The raw, unnormalized scores the model outputs — one per vocab token — before softmax.</dd>
+          <dt>Softmax</dt><dd>Turns logits into probabilities: exponentiate, then normalize to sum to 1.</dd>
+          <dt>Q / K / V</dt><dd>Query (“what am I looking for?”), Key (“what do I contain?”), Value (“what I hand over”) — the three projections behind attention.</dd>
+          <dt>Causal mask</dt><dd>Sets future positions to −∞ before softmax so position i only sees ≤ i — what makes the model a generator.</dd>
+          <dt>Multi-head attention</dt><dd>Several smaller attentions in parallel (6 × 64 dims here), each learning a different way of looking; concatenated and projected back.</dd>
+          <dt>Residual connection</dt><dd><code>x = x + sublayer(x)</code> — each block refines the identity; the gradient superhighway of deep nets.</dd>
+          <dt>LayerNorm</dt><dd>Re-centers/re-scales each token's vector before a sublayer (pre-norm in GPT-2 style) for stable training.</dd>
+          <dt>Feed-forward (FFN)</dt><dd>The per-token MLP (384→1536→384, GELU); attention mixes across tokens, the FFN thinks per token.</dd>
+          <dt>Cross-entropy</dt><dd><code>−log p(correct next token)</code> — the training loss; untrained baseline = ln(vocab) ≈ 7.63 for vocab 2,050.</dd>
+          <dt>AdamW</dt><dd>Optimizer with per-parameter momentum + variance adaptation and decoupled weight decay.</dd>
+          <dt>Checkpoint</dt><dd>Saved model + optimizer + step, so training (or inference) can resume anywhere.</dd>
+          <dt>AMP</dt><dd>Automatic Mixed Precision — 16-bit activations/matmuls with fp32 master weights: ~half the activation memory, faster math.</dd>
+          <dt>Gradient accumulation</dt><dd>K micro-batch backwards per optimizer step — simulates a K×-larger batch in the same VRAM.</dd>
+          <dt>Gradient checkpointing</dt><dd>Drop mid-block activations and recompute them in backward — memory for time.</dd>
+          <dt>Perplexity</dt><dd><code>e^(avg val loss)</code> — “among how many tokens is the model effectively guessing?” Random = vocab size.</dd>
+          <dt>ROUGE</dt><dd>N-gram overlap between generated and reference text — a rough content signal, not a verdict.</dd>
+          <dt>Temperature / top-k / top-p</dt><dd>Sampling shapers: T scales logits (sharp↔flat); top-k keeps the k best; top-p keeps the smallest set with cumulative probability ≥ p.</dd>
+          <dt>Autoregressive</dt><dd>Generate one token, append it, feed everything back, repeat — how GPTs write.</dd>
+          <dt>KV cache</dt><dd>Reuse each step's attention Keys/Values instead of recomputing — the standard inference speedup (optional here).</dd>
         </dl>
       </div>
     </section>
@@ -1071,6 +1759,63 @@ function runDE(){
   deOut.textContent = "→ \"" + decode(ids, baseVocab) + "\"";
 }
 deIds.addEventListener("input", runDE); runDE();
+
+// sequence builder — encode(title) + [2048] + encode(abstract) + [2049], specials injected as ints
+const SB_SEP = 2048, SB_EOT = 2049;
+const sbTitle = document.getElementById("sb-title"), sbAbs = document.getElementById("sb-abs"),
+      sbInline = document.getElementById("sb-inline"), sbIds = document.getElementById("sb-ids");
+function runSB(){
+  const tIds = encode(sbTitle.value, enTrained.mergeIdx);
+  const aIds = encode(sbAbs.value, enTrained.mergeIdx);
+  const seq = [...tIds, SB_SEP, ...aIds, SB_EOT];
+  sbInline.innerHTML = "";
+  seq.forEach((id, pos) => {
+    const span = document.createElement("span");
+    if(id === SB_SEP || id === SB_EOT){
+      span.className = "t sp";
+      span.textContent = (id === SB_SEP) ? "<|sep|>" : "<|endoftext|>";
+    } else {
+      span.className = "t";
+      span.style.background = CHIP_TINTS[pos % CHIP_TINTS.length];
+      span.textContent = tokenDisplay(id, enTrained.vocab);
+    }
+    span.title = "id " + id;
+    sbInline.appendChild(span);
+  });
+  sbIds.textContent = "[" + seq.join(", ") + "]";
+}
+[sbTitle, sbAbs].forEach(el => el.addEventListener("input", runSB)); runSB();
+
+// sampling lab — temperature & top-k over a toy next-token distribution
+const SM_TOKENS = [" learning", " model", " data", " neural", " the", " banana"];
+const SM_LOGITS = [3.1, 2.6, 2.2, 1.4, 0.8, -1.5];
+const smTemp = document.getElementById("sm-temp"), smTempOut = document.getElementById("sm-temp-out"),
+      smTopk = document.getElementById("sm-topk"), smTopkOut = document.getElementById("sm-topk-out"),
+      smBars = document.getElementById("sm-bars");
+function runSM(){
+  const T = parseFloat(smTemp.value), k = parseInt(smTopk.value, 10);
+  smTempOut.textContent = T.toFixed(1);
+  smTopkOut.textContent = k;
+  const scaled = SM_LOGITS.map(l => l / T);
+  const mx = Math.max(...scaled);
+  const exps = scaled.map(s => Math.exp(s - mx));            // stable softmax numerator
+  const order = exps.map((e, i) => i).sort((a, b) => exps[b] - exps[a]);
+  const keep = new Set(order.slice(0, k));                    // top-k cut
+  const z = order.slice(0, k).reduce((acc, i) => acc + exps[i], 0);
+  smBars.innerHTML = "";
+  SM_TOKENS.forEach((tok, i) => {
+    const cut = !keep.has(i);
+    const p = cut ? 0 : exps[i] / z;
+    const row = document.createElement("div");
+    row.className = "bar-row" + (cut ? " cut" : "");
+    row.innerHTML =
+      `<span class="bar-lbl">"${tok}"</span>` +
+      `<span class="bar-track"><span class="bar-fill" style="width:${(p * 100).toFixed(1)}%"></span></span>` +
+      `<span class="bar-pct">${cut ? "cut" : (p * 100).toFixed(1) + "%"}</span>`;
+    smBars.appendChild(row);
+  });
+}
+[smTemp, smTopk].forEach(el => el.addEventListener("input", runSM)); runSM();
 
 /* ---------- Scrollspy ---------- */
 const spyLinks = Array.from(document.querySelectorAll("[data-spy]"));
