@@ -26,7 +26,7 @@
   }
   *{box-sizing:border-box;}
   html{color-scheme:light;}
-  @media (prefers-reduced-motion: no-preference){ html{scroll-behavior:smooth;} }
+  @media (prefers-reduced-motion: no-preference){ html,main{scroll-behavior:smooth;} }
   body{
     margin:0; background:var(--paper); color:var(--ink);
     font-family:var(--sans); font-size:17px; line-height:1.65;
@@ -38,12 +38,33 @@
 
   /* ---------- Layout ---------- */
   .layout{ display:grid; grid-template-columns:270px minmax(0,1fr); align-items:start; }
+  body.nav-hidden .layout{ grid-template-columns:minmax(0,1fr); }
+  body.nav-hidden .sidebar{ display:none; }
   .sidebar{
     position:sticky; top:0; height:100vh; overflow-y:auto;
-    background:#0F1420; color:#C9D2E0; padding:26px 20px 40px;
+    background:#0F1420; color:#C9D2E0; padding:64px 20px 40px;
     border-right:1px solid #1E2637;
   }
-  main{ padding:0 clamp(20px,5vw,72px) 96px; min-width:0; }
+  main{
+    padding:0 clamp(20px,5vw,72px) 96px; min-width:0;
+    height:100vh; overflow-y:auto;
+    scrollbar-width:thin; scrollbar-color:#B9C2CF transparent;
+  }
+  main::-webkit-scrollbar{ width:12px; }
+  main::-webkit-scrollbar-track{ background:transparent; }
+  main::-webkit-scrollbar-thumb{ background:#C6CEDA; border-radius:8px; border:3px solid var(--paper); }
+  main::-webkit-scrollbar-thumb:hover{ background:#9AA6B7; }
+
+  /* ---------- Sidebar toggle ---------- */
+  .nav-toggle{
+    position:fixed; top:14px; left:14px; z-index:60;
+    width:36px; height:36px; display:flex; align-items:center; justify-content:center;
+    background:#18202F; color:#C9D2E0; border:1px solid #2A3447; border-radius:8px;
+    font-size:16px; cursor:pointer; transition:background .15s ease, color .15s ease;
+  }
+  .nav-toggle:hover{ background:var(--accent); color:#fff; }
+  body.nav-hidden .nav-toggle{ background:var(--card); color:var(--ink); border-color:var(--line);
+    box-shadow:0 1px 3px rgba(16,24,40,.12); }
 
   /* ---------- Sidebar ---------- */
   .brand{ display:flex; align-items:baseline; gap:8px; margin-bottom:4px; }
@@ -65,13 +86,14 @@
   .nav-group a.soon::after{ content:"·soon"; float:right; color:#5A6478; font-family:var(--mono); font-size:11px; }
 
   /* ---------- Reading rhythm ---------- */
-  .wrap{ max-width:var(--maxread); }
+  .wrap{ max-width:var(--maxread); margin:0 auto; }
   .wrap.wide{ max-width:920px; }
   h1,h2,h3{ text-wrap:balance; line-height:1.2; }
   h2{ font-size:30px; letter-spacing:-0.6px; margin:0 0 6px; }
   h3{ font-size:21px; letter-spacing:-0.3px; margin:34px 0 8px; }
   h4{ font-size:15px; margin:22px 0 6px; font-family:var(--mono); letter-spacing:.3px; }
   p{ margin:0 0 16px; }
+  .wrap > p + p{ text-indent:1.6em; }
   .eyebrow{ font-family:var(--mono); font-size:12px; letter-spacing:2px; text-transform:uppercase; color:var(--accent); margin:0 0 10px; }
   section{ padding-top:56px; }
   section.phase{ border-top:1px solid var(--line); margin-top:34px; }
@@ -197,18 +219,20 @@
     background:var(--accent); color:#fff; border-radius:8px; padding:9px 14px; }
   .membrane .mem-side{ font-family:var(--mono); font-size:10px; letter-spacing:1.6px; text-transform:uppercase; color:rgba(255,255,255,.62); }
   .membrane .mem-op{ font-family:var(--mono); font-size:13.5px; font-weight:600; }
-  .drow{ display:flex; flex-wrap:wrap; align-items:stretch; gap:10px; }
-  .dnode{ flex:1 1 150px; background:#fff; border:1px solid var(--line); border-radius:9px; padding:11px 13px;
+  .drow{ display:flex; flex-wrap:nowrap; align-items:stretch; gap:10px; overflow-x:auto; padding-bottom:2px; }
+  .dnode{ flex:1 1 150px; min-width:150px; background:#fff; border:1px solid var(--line); border-radius:9px; padding:11px 13px;
     box-shadow:0 1px 2px rgba(16,24,40,.06); }
   .dnode-k{ display:block; font-family:var(--mono); font-size:10px; letter-spacing:1px; text-transform:uppercase; color:var(--muted); margin-bottom:4px; }
   .dnode-v{ display:block; font-family:var(--mono); font-size:13.5px; }
   .dnode.ids .dnode-v{ color:var(--accent); }
   .dnode.core{ border:1.5px dashed var(--accent); flex:2 1 220px; }
-  .conn{ align-self:center; color:var(--accent); font-size:16px; font-weight:700; }
+  .conn{ align-self:stretch; flex:0 0 auto; display:flex; align-items:center; justify-content:center;
+    color:var(--accent); font-size:16px; font-weight:700; }
   .fig-cap{ font-size:13.5px; color:var(--muted); padding:2px 18px 16px; margin:0; }
   @media (max-width:640px){
-    .drow{ flex-direction:column; }
-    .conn{ transform:rotate(90deg); align-self:flex-start; margin-left:20px; }
+    .drow{ flex-direction:column; overflow-x:visible; }
+    .conn{ transform:rotate(90deg); align-self:center; }
+    .dnode{ min-width:0; }
     .dnode.core{ flex-basis:auto; }
   }
 
@@ -231,6 +255,9 @@
   /* ---------- Responsive ---------- */
   @media (max-width:900px){
     .layout{ grid-template-columns:1fr; }
+    main{ height:auto; overflow:visible; }
+    .nav-toggle{ display:none; }
+    body.nav-hidden .sidebar{ display:flex; }
     .sidebar{ position:sticky; top:0; height:auto; border-right:none; border-bottom:1px solid #1E2637;
       display:flex; gap:14px; overflow-x:auto; padding:14px 16px; align-items:center; }
     .brand,.brand-sub{ margin:0; white-space:nowrap; }
@@ -246,8 +273,11 @@
 <body>
 <div class="layout">
 
+  <button class="nav-toggle" id="nav-toggle" type="button" aria-controls="sidebar" aria-expanded="true"
+    title="Show / hide the sidebar">☰</button>
+
   <!-- ================= SIDEBAR ================= -->
-  <aside class="sidebar">
+  <aside class="sidebar" id="sidebar">
     <div class="brand"><span class="mark">Trinity-AI<span class="dot">·</span>Codex</span></div>
     <div class="brand-sub">Pillar I — SLM from scratch</div>
 
@@ -1966,6 +1996,16 @@ const obs = new IntersectionObserver((entries) => {
   });
 }, { rootMargin: "-45% 0px -50% 0px", threshold: 0 });
 document.querySelectorAll("main section[id]").forEach(s => obs.observe(s));
+
+/* ---------- Sidebar toggle ---------- */
+const navToggle = document.getElementById("nav-toggle");
+function setNav(hidden){
+  document.body.classList.toggle("nav-hidden", hidden);
+  navToggle.setAttribute("aria-expanded", String(!hidden));
+  try{ localStorage.setItem("codex-nav", hidden ? "hidden" : "open"); }catch(_){}
+}
+navToggle.addEventListener("click", () => setNav(!document.body.classList.contains("nav-hidden")));
+try{ if(localStorage.getItem("codex-nav") === "hidden") setNav(true); }catch(_){}
 </script>
 </body>
 </html>
