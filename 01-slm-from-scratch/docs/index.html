@@ -212,6 +212,15 @@
     .dnode.core{ flex-basis:auto; }
   }
 
+  /* ---------- Recap figures ---------- */
+  .dnode.sp{ background:var(--amber-tint); border-color:var(--amber); }
+  .dnode.sp .dnode-k{ color:var(--amber); }
+  .dnode.sp .dnode-v{ color:var(--amber); font-weight:600; }
+  .dnode.warn{ background:var(--amber-tint); border:1.5px dashed var(--amber); }
+  .dnode.warn .dnode-k{ color:var(--amber); }
+  .vconn{ color:var(--accent); font-size:16px; font-weight:700; margin:1px 0 1px 26px; }
+  .loopnote{ font-family:var(--mono); font-size:12px; color:var(--muted); margin:10px 0 0 2px; }
+
   /* ---------- Glossary ---------- */
   dl.gloss{ margin:16px 0; }
   dl.gloss dt{ font-family:var(--mono); font-weight:700; color:var(--accent); margin-top:16px; }
@@ -276,6 +285,11 @@
       <a href="#p2-vocab" data-spy="p2-vocab" class="sub">Choosing vocab size</a>
       <a href="#p2-specials" data-spy="p2-specials" class="sub">Special tokens</a>
       <a href="#p2-loader" data-spy="p2-loader" class="sub">Dataset / DataLoader</a>
+    </nav>
+
+    <nav class="nav-group" aria-label="Checkpoint">
+      <span class="nav-label">Checkpoint</span>
+      <a href="#recap" data-spy="recap">Recap · the map so far</a>
     </nav>
 
     <nav class="nav-group" aria-label="Field guide">
@@ -1122,6 +1136,105 @@ with shuffle:     [P1402 P88 P3 P957] [P16 P731 …] …  ← fair samples of th
           <code>title&lt;|sep|&gt;abstract…</code>. A batch of (title, abstract) tensors with correct shapes —
           <strong>Phase 2 complete.</strong> (The ~40% padding waste against the 769-token outlier is exactly why
           the context-window decision opens Phase 3.)</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ CHECKPOINT · RECAP (Phases 0–2) ============ -->
+    <section id="recap" class="phase">
+      <div class="wrap">
+        <p class="eyebrow">Checkpoint · after Phases 0–2</p>
+        <h2>The recap map — the machine so far</h2>
+        <p class="lead">The full-recap exercise (2026-07-31) asked one thing: draw the whole machine,
+        arXiv paper → batch tensor, from a blank page. These are the answer-key figures. If you can
+        redraw Fig&nbsp;R1 from memory — files, numbers and all — Phases 0–2 are yours.</p>
+      </div>
+
+      <div class="wrap wide">
+        <div class="fig">
+          <div class="fig-head"><span class="fig-tag">Fig R1</span> The data pipeline — every stage, its file, its numbers</div>
+          <div class="fig-body">
+            <div class="drow">
+              <div class="dnode"><span class="dnode-k">source</span><span class="dnode-v">arXiv API · cs.LG</span></div>
+              <span class="conn">→</span>
+              <div class="dnode ids"><span class="dnode-k">fetch_arxiv.py · fetch + clean</span><span class="dnode-v">data/arxiv_cs_LG.jsonl · 2,000 pairs</span></div>
+              <span class="conn">→</span>
+              <div class="dnode"><span class="dnode-k">manifest · committed to git</span><span class="dnode-v">paper_ids.txt → restore_from_manifest()</span></div>
+            </div>
+            <div class="vconn">↓</div>
+            <div class="drow">
+              <div class="dnode ids"><span class="dnode-k">train_tokenizer.py · BPE on titles + abstracts</span><span class="dnode-v">models/arxiv_2048.model · vocab 2,048</span></div>
+              <span class="conn">→</span>
+              <div class="dnode sp"><span class="dnode-k">specials · appointed outside BPE</span><span class="dnode-v">SEP 2048 · EOT 2049 · PAD 2050 ⇒ model vocab 2,051</span></div>
+            </div>
+            <div class="vconn">↓</div>
+            <div class="drow">
+              <div class="dnode ids"><span class="dnode-k">prepare_data.py · the recipe (Fig R2)</span><span class="dnode-v">data/tokenized_cs_LG.jsonl</span></div>
+              <span class="conn">→</span>
+              <div class="dnode"><span class="dnode-k">sequence lengths</span><span class="dnode-v">avg 317 · max 769 · min 51</span></div>
+            </div>
+            <div class="vconn">↓</div>
+            <div class="drow">
+              <div class="dnode ids"><span class="dnode-k">dataset.py · TitleAbstractDataset + DataLoader</span><span class="dnode-v">shuffle · batch 32 · PAD-pad collate</span></div>
+              <span class="conn">→</span>
+              <div class="dnode core"><span class="dnode-k">✅ done-when · verified</span><span class="dnode-v">batch tensor (32, 577) · torch.int64</span></div>
+            </div>
+          </div>
+          <p class="fig-cap">Data (<code>*.jsonl</code>) is git-ignored; the committed manifest rebuilds it
+          identically on any machine. Batch shape reads: 32 = batch size · 577 = this batch's longest
+          sequence, everyone else padded up to it.</p>
+        </div>
+
+        <div class="fig">
+          <div class="fig-head"><span class="fig-tag">Fig R2</span> One training sequence — what the model will actually see</div>
+          <div class="fig-body">
+            <div class="drow">
+              <div class="dnode"><span class="dnode-k">the prompt</span><span class="dnode-v">encode(title)</span></div>
+              <span class="conn">+</span>
+              <div class="dnode sp"><span class="dnode-k">boundary · “prompt ends, target begins”</span><span class="dnode-v">&lt;|sep|&gt; 2048</span></div>
+              <span class="conn">+</span>
+              <div class="dnode"><span class="dnode-k">the target</span><span class="dnode-v">encode(abstract)</span></div>
+              <span class="conn">+</span>
+              <div class="dnode sp"><span class="dnode-k">stop signal · learned, ends generation</span><span class="dnode-v">&lt;|eot|&gt; 2049</span></div>
+              <span class="conn">+</span>
+              <div class="dnode sp"><span class="dnode-k">filler · batch rectangle only</span><span class="dnode-v">&lt;|pad|&gt; 2050 ×n</span></div>
+            </div>
+          </div>
+          <p class="fig-cap"><code>SEP</code> marks the title|abstract boundary — <em>not</em> spaces. At
+          inference (Phase 7) you feed <code>encode(new_title) + [SEP]</code> and the model continues until
+          it emits <code>[EOT]</code>. That is why these two exist.</p>
+        </div>
+
+        <div class="fig">
+          <div class="fig-head"><span class="fig-tag">Fig R3</span> The training loop — including the step everyone forgets</div>
+          <div class="fig-body">
+            <div class="drow">
+              <div class="dnode"><span class="dnode-k">1 · forward</span><span class="dnode-v">predictions → loss</span></div>
+              <span class="conn">→</span>
+              <div class="dnode warn"><span class="dnode-k">2 · zero the grads ⚠</span><span class="dnode-v">grads accumulate with +=</span></div>
+              <span class="conn">→</span>
+              <div class="dnode"><span class="dnode-k">3 · loss.backward()</span><span class="dnode-v">chain rule · one sweep fills every grad</span></div>
+              <span class="conn">→</span>
+              <div class="dnode"><span class="dnode-k">4 · update</span><span class="dnode-v">w.data −= lr · w.grad</span></div>
+            </div>
+            <div class="loopnote">↺ repeat — skip step 2 and yesterday's gradients pile onto today's (the famous micrograd bug).</div>
+          </div>
+          <p class="fig-cap">Phase 0's mental model, and Phase 4's blueprint: the whole of training is this
+          cycle, run until validation loss stops falling.</p>
+        </div>
+      </div>
+
+      <div class="wrap">
+        <div class="callout key">
+          <span class="tag">Burn-in corner — the recap gap list (re-tested at Phase 3 start)</span>
+          <p>Raw pre-softmax outputs = <strong>logits</strong> · byte-level BPE starts at
+          <strong>256</strong> tokens (a byte is 8 <em>bits</em> → 2⁸ = 256) ·
+          <code>loss.backward()</code> is cheap because of the <strong>chain rule</strong> (upstream grads
+          computed once, reused) · encoding applies merges in <strong>creation order</strong> (later merges
+          stack on earlier ones) · bigger batch = throughput + smoother gradient, paid in
+          <strong>activation VRAM</strong> · shuffling keeps every batch a representative sample →
+          <strong>unbiased gradients</strong> · <code>Dataset</code> = what one example <em>is</em>,
+          <code>DataLoader</code> = how examples are <em>delivered</em>.</p>
         </div>
       </div>
     </section>
