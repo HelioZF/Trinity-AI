@@ -33,6 +33,11 @@ Each phase follows a fixed rhythm — the user learns by doing, not by being tol
 4. **Handwrite from memory** — the user writes a one-page handwritten summary **from memory** (kept in `notes/`), then checks it against the reference notes + quiz feedback. This is their core active-learning step — prompt them for it.
 5. **Reference notes** — Claude writes a digital `notes/Video##_*.md` (content + key concepts) as the searchable answer key.
 
+**Session rhythm (from 2026-08-03 — the user started full-time at Contabilizei):**
+- **Weekdays:** 2–4 optional light touches (15–30 min): gap re-tests, quiz rounds, one Codex section, mini-summaries. Retrieval only — never new heavy theory midweek. Zero-days are allowed by design.
+- **Weekends:** a recap of the week's material + one deep block (90–120 min): videos, building, training runs.
+- **First ~2 weeks of the job (from 2026-08-03): job first, no scheduled study** — optional 5–10 min re-tests only. Size every session to the day; depth over speed, no deadlines.
+
 **Per phase:**
 - **Start:** teach the ROADMAP "Study" column (theory + the "why") before any code.
 - **End:** write `notebooks/Phase-N-memo.md` + recommend a re-watch video, then **commit + push** (keep `ROADMAP.md` current as the portable "you are here" marker — Claude's local memory does not travel between machines).
