@@ -33,10 +33,11 @@ Each phase follows a fixed rhythm — the user learns by doing, not by being tol
 4. **Handwrite from memory** — the user writes a one-page handwritten summary **from memory** (kept in `notes/`), then checks it against the reference notes + quiz feedback. This is their core active-learning step — prompt them for it.
 5. **Reference notes** — Claude writes a digital `notes/Video##_*.md` (content + key concepts) as the searchable answer key.
 
-**Session rhythm (from 2026-08-03 — the user started full-time at Contabilizei):**
-- **Weekdays:** 2–4 optional light touches (15–30 min): gap re-tests, quiz rounds, one Codex section, mini-summaries. Retrieval only — never new heavy theory midweek. Zero-days are allowed by design.
-- **Weekends:** a recap of the week's material + one deep block (90–120 min): videos, building, training runs.
-- **First ~2 weeks of the job (from 2026-08-03): job first, no scheduled study** — optional 5–10 min re-tests only. Size every session to the day; depth over speed, no deadlines.
+**Session rhythm (v2, from 2026-08-17 — daily-first + streak):** weekend-only failed in practice (two zero weekends after the job started); the user learns best with small daily commitments, gamified.
+- **Every day: ONE micro-task (10–20 min)** — a quiz/gap re-test round, one Codex section + one-line takeaway, a handwritten mini-summary, or one bug/build step. Claude assigns one concrete task per check-in, small enough that skipping is never worth it. Retrieval-first; no heavy new theory midweek.
+- **Weekends:** recap of the week + one deep dive (60–120 min) when energy allows.
+- **🔥 Streak (user-requested, Duolingo-style):** tracked in `STREAK.md` — every session Claude updates the log + counts, applies the weekly 🧊 freeze to one missed day, and celebrates milestones (7/14/30/60/100). The commit+push is the tick.
+- Depth over speed, no deadlines; size every session to the day.
 
 **Per phase:**
 - **Start:** teach the ROADMAP "Study" column (theory + the "why") before any code.
