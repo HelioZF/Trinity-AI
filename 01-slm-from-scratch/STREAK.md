@@ -5,8 +5,8 @@
 
 | | |
 |---|---|
-| **Current streak** | 0 days |
-| **Longest streak** | 0 days |
+| **Current streak** | 🔥 1 day |
+| **Longest streak** | 1 day |
 | **Freeze available this week** | 🧊 1 (protects one missed day; doesn't count as study) |
 | **Next milestone** | 🎯 7 days → 🏅 |
 
@@ -26,3 +26,4 @@
 ## 📒 Log
 | # | Date | Task | Streak |
 |---|------|------|:---:|
+| 1 | 2026-08-18 | ⚡ Gap-list warm-up re-test — 5✅ 3⚠️ 0❌ (logits, 256, encode-order, SEP now solid; watch: "gradient", chain rule, smoother gradients) | 🔥 1 |
